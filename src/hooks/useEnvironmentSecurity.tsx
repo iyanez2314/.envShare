@@ -13,6 +13,8 @@ export function useEnvironmentSecurity() {
     Record<string, EnvironmentVariable>
   >({});
 
+  console.log("Secure Vars:", secureVars);
+
   // Check if a key name suggests sensitive content
   const isSensitiveKey = useCallback((key: string): boolean => {
     const sensitivePatterns = [
