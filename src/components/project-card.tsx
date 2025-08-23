@@ -26,6 +26,7 @@ import {
 import type { Project } from "@/interfaces";
 import { EnvVarsDialog } from "./env-vars-dialog";
 import { TeamMembersDialog } from "./team-member-dialog";
+import { TeamMemberAvatar } from "./team-member-icons";
 
 interface ProjectCardProps {
   project: Project;
@@ -64,7 +65,7 @@ export function ProjectCard({
 
   return (
     <>
-      <Card className="bg-card border-border hover:shadow-md transition-shadow">
+      <Card className="bg-card border-border hover:shadow-md transition-shadow w-90">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -124,8 +125,8 @@ export function ProjectCard({
             </p>
           )}
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-evenly">
+            <div className="flex items-center gap-1.5">
               <Badge
                 variant="secondary"
                 className="bg-muted text-muted-foreground"
@@ -135,9 +136,9 @@ export function ProjectCard({
               </Badge>
               <Badge
                 variant="secondary"
-                className="bg-muted text-muted-foreground"
+                className="bg-muted text-muted-foreground py-1 px-2 flex items-center"
               >
-                <Users className="h-3 w-3 mr-1" />
+                <TeamMemberAvatar teamMembers={project.teamMembers} />
                 {teamMembers.length}{" "}
                 {teamMembers.length === 1 ? "member" : "members"}
               </Badge>
@@ -150,14 +151,6 @@ export function ProjectCard({
               >
                 {userRole}
               </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(project.githubUrl, "_blank")}
-                className="text-accent hover:text-accent-foreground hover:bg-accent/10"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </CardContent>
