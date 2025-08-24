@@ -1,3 +1,5 @@
 node_modules
 .tanstack
 .git
+
+/generated/prisma
