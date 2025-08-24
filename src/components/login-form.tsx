@@ -1,7 +1,3 @@
-import { useServerFn } from "@tanstack/react-start";
-import { useRouter } from "@tanstack/react-router";
-import { useMutation } from "@/hooks/useMutation";
-import { loginFn } from "@/routes/_authed";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -21,26 +17,17 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
     onSubmit(email, password);
   };
-
-  const loginMutation = useMutation({
-    fn: loginFn,
-    onSuccess: async (ctx) => {
-      if (!ctx.data?.error) {
-        await router.invalidate();
-        router.navigate({ to: "/" });
-        return;
-      }
-    },
-  });
 
   return (
     <Card>
@@ -51,18 +38,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-
-            const email = formData.get("email") as string;
-            const password = formData.get("password") as string;
-
-            loginMutation.mutate({ data: { email, password } });
-          }}
-        >
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="login-email">Email</Label>
             <div className="relative">
@@ -111,4 +87,3 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
     </Card>
   );
 }
-

@@ -1,5 +1,7 @@
 import type React from "react";
-
+import { useRouter } from "@tanstack/react-router";
+import { useMutation } from "@/hooks/useMutation";
+import { loginFn } from "@/routes/_authed";
 import {
   Dialog,
   DialogContent,
@@ -17,12 +19,10 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
+  const router = useRouter();
+
   const handleLogin = (email: string, password: string) => {
-    // TODO: Implement login logic
-    console.log("[v0] Login attempt:", { email });
-    // For now, just close the modal and redirect to dashboard
-    onOpenChange(false);
-    window.location.href = "/";
+    loginMutation.mutate({ data: { email, password } });
   };
 
   const handleSignup = (name: string, email: string, password: string) => {
@@ -32,6 +32,17 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     onOpenChange(false);
     window.location.href = "/";
   };
+
+  const loginMutation = useMutation({
+    fn: loginFn,
+    onSuccess: async (ctx) => {
+      if (!ctx.data?.error) {
+        await router.invalidate();
+        router.navigate({ to: "/" });
+        return;
+      }
+    },
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
