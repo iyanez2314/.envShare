@@ -7,6 +7,8 @@ type SessionUser = {
 
 export function useAppSession() {
   return useSession<SessionUser>({
-    password: "",
+    password:
+      process.env.SESSION_SECRET ||
+      "your-super-secret-session-password-at-least-32-chars-long",
   });
 }

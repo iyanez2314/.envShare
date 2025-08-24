@@ -1,7 +1,7 @@
 import type React from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useMutation } from "@/hooks/useMutation";
-import { loginFn } from "@/routes/_authed";
+import { loginFn, signUpFn } from "@/routes/_authed";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Github } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 import { SignupForm } from "@/components/signup-form";
+import { toast } from "sonner";
 
 interface AuthModalProps {
   open: boolean;
@@ -26,11 +27,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   };
 
   const handleSignup = (name: string, email: string, password: string) => {
-    // TODO: Implement signup logic
-    console.log("[v0] Signup attempt:", { name, email });
-    // For now, just close the modal and redirect to dashboard
-    onOpenChange(false);
-    window.location.href = "/";
+    signupMutation.mutate({ data: { name, email, password } });
   };
 
   const loginMutation = useMutation({
@@ -38,11 +35,29 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     onSuccess: async (ctx) => {
       if (!ctx.data?.error) {
         await router.invalidate();
-        router.navigate({ to: "/" });
+        router.navigate({ to: "/dashboard" });
         return;
       }
     },
   });
+
+  const signupMutation = useMutation({
+    fn: signUpFn,
+    onSuccess: async (ctx) => {
+      if (ctx.data?.userExists) {
+        toast.info("Seems like you already have an account. Please log in.");
+        return;
+      }
+
+      if (!ctx.data?.error) {
+        await router.invalidate();
+        router.navigate({ to: "/dashboard" });
+        return;
+      }
+    },
+  });
+
+  const { status: signupStatus } = signupMutation;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,7 +82,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4">
-            <SignupForm onSubmit={handleSignup} />
+            <SignupForm status={signupStatus} onSubmit={handleSignup} />
           </TabsContent>
         </Tabs>
       </DialogContent>

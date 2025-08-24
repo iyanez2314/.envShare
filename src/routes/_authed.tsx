@@ -70,9 +70,7 @@ export const signUpFn = createServerFn({ method: "POST" })
       userEmail: newUser.email,
     });
 
-    throw redirect({
-      href: "/dashboard",
-    });
+    return { success: true };
   });
 
 export const Route = createFileRoute("/_authed")({

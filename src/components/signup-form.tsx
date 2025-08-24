@@ -14,9 +14,10 @@ import { Mail, Lock, User } from "lucide-react";
 
 interface SignupFormProps {
   onSubmit: (name: string, email: string, password: string) => void;
+  status?: "idle" | "pending" | "success" | "error";
 }
 
-export function SignupForm({ onSubmit }: SignupFormProps) {
+export function SignupForm({ onSubmit, status }: SignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,16 +106,21 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full">
-            Create Account
+          <Button
+            type="submit"
+            disabled={status === "pending"}
+            className="w-full"
+          >
+            {status === "pending" ? "Creating Account..." : "Sign Up"}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            By creating an account, you agree to our Terms of Service
-            and Privacy Policy.
+            By creating an account, you agree to our Terms of Service and
+            Privacy Policy.
           </p>
         </form>
       </CardContent>
     </Card>
   );
 }
+
