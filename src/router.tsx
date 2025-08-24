@@ -1,9 +1,15 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import type { User } from "@/interfaces";
+
+export interface RouterContext {
+  user?: User;
+}
 
 export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
+    context: {} as RouterContext,
     scrollRestoration: true,
   });
 
