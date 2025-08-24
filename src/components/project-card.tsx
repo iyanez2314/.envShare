@@ -65,7 +65,7 @@ export function ProjectCard({
 
   return (
     <>
-      <Card className="bg-card border-border hover:shadow-md transition-shadow w-90">
+      <Card className="h-full bg-card border-border hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">

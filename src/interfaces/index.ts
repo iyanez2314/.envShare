@@ -5,6 +5,15 @@ export interface TeamMember {
   addedAt: string;
 }
 
+export interface Organization {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  teamMembers: TeamMember[];
+  ownerId: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -14,4 +23,5 @@ export interface Project {
   createdAt: string;
   teamMembers: TeamMember[];
   ownerId: string;
+  organizationId: string;
 }
