@@ -25,6 +25,10 @@ import { FeatureCard } from "@/components/feature-card";
 import { CTASection } from "@/components/cta-section";
 import { Footer } from "@/components/footer";
 
+export const Route = createFileRoute("/")({
+  component: LandingPage,
+});
+
 export default function LandingPage() {
   const [showModal, setShowModal] = useState(false);
 
@@ -190,7 +194,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-export const Route = createFileRoute("/")({
-  component: LandingPage,
-});
