@@ -1,9 +1,13 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { GitBranch } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
+import { isUserAuthedFn } from "@/server-functions/_index";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayoutComponent,
+  beforeLoad: async () => {
+    const isAuthed = await isUserAuthedFn();
+  },
 });
 
 function DashboardLayoutComponent() {
