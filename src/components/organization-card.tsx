@@ -64,7 +64,10 @@ export function OrganizationCard({
     if ((e.target as HTMLElement).closest("[data-dropdown-trigger]")) {
       return;
     }
-    navigate({ to: "/organization/$id", params: { id: organization.id } });
+    navigate({
+      to: "/dashboard/organization/$id",
+      params: { id: organization.id },
+    });
   };
 
   return (
