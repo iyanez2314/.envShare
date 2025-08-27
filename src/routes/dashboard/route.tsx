@@ -1,16 +1,34 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { GitBranch } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
-import { isUserAuthedFn } from "@/server-functions/_index";
+import { validateIncomingRequestFn } from "@/server-functions";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayoutComponent,
   beforeLoad: async () => {
-    const isAuthed = await isUserAuthedFn();
+    const result = await validateIncomingRequestFn();
+
+    if (!result.valid) {
+      throw redirect({
+        to: "/",
+        search: {
+          redirect: "/dashboard",
+        },
+      });
+    }
+
+    return {
+      user: result.user,
+    };
+  },
+  loader: async ({ params, context }) => {
+    const user = context.user;
+    return { user };
   },
 });
 
 function DashboardLayoutComponent() {
+  const { user } = Route.useRouteContext();
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">

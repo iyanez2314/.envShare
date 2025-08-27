@@ -1,7 +1,7 @@
 import type React from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useMutation } from "@/hooks/useMutation";
-import { loginFn, signUpFn } from "@/routes/_authed";
+import { loginFn, signUpFn } from "@/server-functions";
 import {
   Dialog,
   DialogContent,

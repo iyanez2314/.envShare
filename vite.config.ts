@@ -12,4 +12,15 @@ export default defineConfig({
     tanstackStart({ customViteReactPlugin: true }),
     viteReact(),
   ],
+  define: {
+    global: "globalThis",
+  },
+  optimizeDeps: {
+    exclude: ["@tanstack/react-router"],
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+    },
+  },
 });
