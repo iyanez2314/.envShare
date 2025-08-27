@@ -5,49 +5,42 @@ import { Plus } from "lucide-react";
 import { OrganizationForm } from "@/components/organization-form";
 import { OrganizationCard } from "@/components/organization-card";
 import type { Organization, TeamMember } from "@/interfaces";
+import { useMutation } from "@/hooks/useMutation";
+import { createOrganizationFn } from "@/server-functions/organization-functions";
 
 export const Route = createFileRoute("/dashboard/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { user } = Route.useRouteContext();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOrganizationForm, setShowOrganizationForm] = useState(false);
   const [selectedOrgForEdit, setSelectedOrgForEdit] =
     useState<Organization | null>(null);
-  const [currentUserId] = useState("current-user-id");
+
+  const createOrganizationMutation = useMutation({
+    fn: createOrganizationFn,
+  });
+
+  const {
+    status: createStatus,
+    data: createOrgData,
+    error: createOrgError,
+  } = createOrganizationMutation;
 
   useEffect(() => {
-    const savedOrganizations = localStorage.getItem("github-organizations");
-    if (savedOrganizations) {
-      setOrganizations(JSON.parse(savedOrganizations));
-    }
-  }, []);
+    console.log("status", createStatus);
+    console.log("data", createOrgData);
+  }, [createStatus, createOrgData]);
 
-  useEffect(() => {
-    localStorage.setItem("github-organizations", JSON.stringify(organizations));
-  }, [organizations]);
-
-  const addOrganization = (
+  const addOrganization = async (
     orgData: Omit<Organization, "id" | "createdAt" | "teamMembers" | "ownerId">,
     teamMembers?: TeamMember[],
   ) => {
-    const ownerMember: TeamMember = {
-      id: crypto.randomUUID(),
-      email: "you@example.com",
-      role: "owner",
-      addedAt: new Date().toISOString(),
-    };
-
-    const newOrganization: Organization = {
-      ...orgData,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      teamMembers: [ownerMember, ...(teamMembers || [])],
-      ownerId: currentUserId,
-    };
-    setOrganizations((prev) => [...prev, newOrganization]);
-    setShowOrganizationForm(false);
+    createOrganizationMutation.mutate({
+      data: { name: orgData.name, description: orgData.description },
+    });
   };
 
   const updateOrganization = (updatedOrg: Organization) => {
@@ -56,7 +49,7 @@ function RouteComponent() {
     );
   };
 
-  const deleteOrganization = (orgId: string) => {
+  const deleteOrganization = (orgId: number) => {
     setOrganizations((prev) => prev.filter((org) => org.id !== orgId));
   };
 
@@ -69,10 +62,7 @@ function RouteComponent() {
             Select an organization to manage its projects
           </p>
         </div>
-        <Badge
-          variant="secondary"
-          className="bg-muted text-muted-foreground"
-        >
+        <Badge variant="secondary" className="bg-muted text-muted-foreground">
           {organizations.length}{" "}
           {organizations.length === 1 ? "organization" : "organizations"}
         </Badge>
@@ -98,12 +88,12 @@ function RouteComponent() {
         </div>
 
         {/* Existing Organizations */}
-        {organizations.map((org) => (
+        {user?.organizations?.map((org) => (
           <OrganizationCard
             key={org.id}
             organization={org}
             projectCount={0}
-            currentUserId={currentUserId}
+            currentUserId={user?.id}
             onEdit={setSelectedOrgForEdit}
             onDelete={deleteOrganization}
             onUpdate={updateOrganization}

@@ -53,6 +53,11 @@ export const validateSessionToken = async (sessionToken: string) => {
         id: true,
         email: true,
         organizationRoles: true,
+        organizations: true,
+        ownedOrganizations: true,
+        ownedProjects: true,
+        projectRoles: true,
+        projects: true,
         name: true,
         createdAt: true,
         updatedAt: true,
@@ -96,4 +101,3 @@ export const cookieConfig = {
   expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
   path: "/",
 };
-

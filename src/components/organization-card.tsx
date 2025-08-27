@@ -34,9 +34,9 @@ import { useNavigate } from "@tanstack/react-router";
 interface OrganizationCardProps {
   organization: Organization;
   projectCount: number;
-  currentUserId: string;
+  currentUserId: number;
   onEdit: (org: Organization) => void;
-  onDelete: (orgId: string) => void;
+  onDelete: (orgId: number) => void;
   onUpdate: (org: Organization) => void;
 }
 
@@ -55,9 +55,8 @@ export function OrganizationCard({
 
   const isOwner = organization.ownerId === currentUserId;
   const userRole =
-    organization.teamMembers?.find(
-      (member) => member.email === "you@example.com",
-    )?.role || "viewer";
+    organization.users?.find((member) => member.email === "you@example.com")
+      ?.email || "viewer";
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger card click if clicking on dropdown menu
@@ -66,7 +65,7 @@ export function OrganizationCard({
     }
     navigate({
       to: "/dashboard/organization/$id",
-      params: { id: organization.id },
+      params: { id: organization.id.toString() },
     });
   };
 
@@ -132,7 +131,7 @@ export function OrganizationCard({
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            <span>{organization.teamMembers?.length || 0} members</span>
+            <span>{organization.users?.length || 0} members</span>
           </div>
           <Badge variant="outline" className="text-xs">
             {userRole}
