@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { OrganizationForm } from "@/components/organization-form";
@@ -9,6 +9,7 @@ import { useMutation } from "@/hooks/useMutation";
 import {
   createOrganizationFn,
   deleteOrganizationFn,
+  updateOrganizationFn,
 } from "@/server-functions/organization-functions";
 import { toast } from "sonner";
 import type { User } from "@/interfaces";
@@ -31,6 +32,22 @@ function RouteComponent() {
         toast.success("Created organization successfully!");
         setShowOrganizationForm(!showOrganizationForm);
         setOrganizations((prev) => [...prev, ctx?.data?.data as Organization]);
+      }
+    },
+  });
+
+  const updateOrganizationMutation = useMutation({
+    fn: updateOrganizationFn,
+    onSuccess: (ctx: any) => {
+      if (ctx.data?.success) {
+        toast.success("Updated organization successfully!");
+        const updatedOrg = ctx.data.data as Organization;
+        setOrganizations((prev) =>
+          prev.map((org) =>
+            org.id === updatedOrg.id ? { ...org, ...updatedOrg } : org,
+          ),
+        );
+        setSelectedOrgForEdit(null);
       }
     },
   });
@@ -69,8 +86,19 @@ function RouteComponent() {
   };
 
   const updateOrganization = (updatedOrg: Organization) => {
-    setOrganizations((prev) =>
-      prev.map((org) => (org.id === updatedOrg.id ? updatedOrg : org)),
+    toast.promise(
+      updateOrganizationMutation.mutate({
+        data: {
+          orgId: updatedOrg.id,
+          name: updatedOrg.name,
+          description: updatedOrg.description,
+        },
+      }),
+      {
+        loading: "Updating organization...",
+        success: "Organization updated!",
+        error: "Failed to update organization.",
+      },
     );
   };
 

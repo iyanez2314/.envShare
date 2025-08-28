@@ -44,6 +44,52 @@ export const createOrganizationFn = createServerFn({ method: "POST" })
     }
   });
 
+export const updateOrganizationFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: { orgId: string | number; name?: string; description?: string }) =>
+      data,
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { user, valid } = await validateIncomingRequestFn();
+
+      if (!user || !valid) {
+        throw new Error("Unauthorized");
+      }
+
+      const orgIdNum =
+        typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
+
+      const roleCheck = await requireOrganizationOwner(user.id, orgIdNum);
+
+      if (!roleCheck.hasAccess) {
+        return {
+          success: false,
+          message:
+            roleCheck.error ||
+            "Forbidden: Only owners can update the organization",
+        };
+      }
+
+      const updatedOrg = await prismaClient.organization.update({
+        where: { id: orgIdNum },
+        data: {
+          name: data.name,
+          description: data.description,
+        },
+      });
+
+      return {
+        success: true,
+        message: "Organization updated successfully",
+        data: updatedOrg,
+      };
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      throw new Error("Internal Server Error");
+    }
+  });
+
 export const deleteOrganizationFn = createServerFn({ method: "POST" })
   .validator((data: { orgId: string | number }) => data)
   .handler(async ({ data }) => {

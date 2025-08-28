@@ -50,13 +50,16 @@ export function OrganizationCard({
 }: OrganizationCardProps) {
   const navigate = useNavigate();
 
+  console.log("organization in OrganizationCard:", organization);
+  console.log("currentUserId in OrganizationCard:", currentUserId);
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showTeamDialog, setShowTeamDialog] = useState(false);
 
   const isOwner = organization.ownerId === currentUserId;
-  const userRole =
-    organization.users?.find((member) => member.email === "you@example.com")
-      ?.email || "viewer";
+  const userRole = organization.users?.find((u) => u.id === currentUserId);
+
+  // Handle card click to navigate to organization details
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger card click if clicking on dropdown menu
