@@ -29,7 +29,6 @@ function RouteComponent() {
     fn: createOrganizationFn,
     onSuccess: (ctx: any) => {
       if (ctx.data?.success) {
-        toast.success("Created organization successfully!");
         setShowOrganizationForm(!showOrganizationForm);
         setOrganizations((prev) => [...prev, ctx?.data?.data as Organization]);
       }
@@ -40,7 +39,6 @@ function RouteComponent() {
     fn: updateOrganizationFn,
     onSuccess: (ctx: any) => {
       if (ctx.data?.success) {
-        toast.success("Updated organization successfully!");
         const updatedOrg = ctx.data.data as Organization;
         setOrganizations((prev) =>
           prev.map((org) =>
@@ -58,11 +56,9 @@ function RouteComponent() {
     },
     onSuccess: (ctx: any) => {
       if (ctx.data?.success) {
-        toast.success("Deleted organization successfully!");
         if (selectedOrgForEdit) {
           setSelectedOrgForEdit(null);
         }
-
         setOrganizations((prev) =>
           prev.filter((org) => org.id !== ctx?.data?.removedOrgId),
         );
@@ -71,18 +67,27 @@ function RouteComponent() {
   });
 
   const { status: createStatus } = createOrganizationMutation;
+  const { status: updateStatus } = updateOrganizationMutation;
+  const { status: deleteStatus } = deleteOrganizationMutation;
 
   const addOrganization = async (
     orgData: Omit<Organization, "id" | "createdAt" | "teamMembers" | "ownerId">,
     teamMembers?: User[],
   ) => {
-    createOrganizationMutation.mutate({
-      data: {
-        name: orgData.name,
-        description: orgData.description,
-        teamMembers,
+    toast.promise(
+      createOrganizationMutation.mutate({
+        data: {
+          name: orgData.name,
+          description: orgData.description,
+          teamMembers,
+        },
+      }),
+      {
+        loading: "Creating organization...",
+        success: "Organization created!",
+        error: "Failed to create organization.",
       },
-    });
+    );
   };
 
   const updateOrganization = (updatedOrg: Organization) => {
@@ -161,6 +166,9 @@ function RouteComponent() {
         {organizations.map((org) => (
           <OrganizationCard
             key={org.id}
+            disableCardInteraction={
+              !!(updateStatus === "pending" || deleteStatus === "pending")
+            }
             organization={org}
             projectCount={0}
             currentUserId={user?.id ?? null}

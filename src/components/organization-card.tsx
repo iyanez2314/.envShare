@@ -30,6 +30,7 @@ import {
 import { OrganizationTeamDialog } from "@/components/organization-team-dialog";
 import type { Organization } from "@/interfaces";
 import { useNavigate } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 
 interface OrganizationCardProps {
   organization: Organization;
@@ -38,6 +39,7 @@ interface OrganizationCardProps {
   onEdit: (org: Organization) => void;
   onDelete: (orgId: string | number) => void;
   onUpdate: (org: Organization) => void;
+  disableCardInteraction?: boolean;
 }
 
 export function OrganizationCard({
@@ -45,6 +47,7 @@ export function OrganizationCard({
   projectCount,
   currentUserId,
   onEdit,
+  disableCardInteraction = false,
   onDelete,
   onUpdate,
 }: OrganizationCardProps) {
@@ -76,7 +79,12 @@ export function OrganizationCard({
     <>
       <div
         onClick={handleCardClick}
-        className="h-full p-6 rounded-lg border border-border bg-card hover:bg-accent/50 cursor-pointer transition-colors relative"
+        className={cn(
+          "h-full p-6 rounded-lg border border-border bg-card hover:bg-accent/50 cursor-pointer transition-colors relative",
+          {
+            "pointer-events-none opacity-50": disableCardInteraction,
+          },
+        )}
       >
         <div className="flex items-start justify-between mb-4">
           <Building2 className="h-8 w-8 text-primary" />
@@ -84,7 +92,11 @@ export function OrganizationCard({
             <Badge variant="secondary">{projectCount} projects</Badge>
             {(isOwner || userRole === "editor") && (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild data-dropdown-trigger>
+                <DropdownMenuTrigger
+                  asChild
+                  data-dropdown-trigger
+                  disabled={disableCardInteraction}
+                >
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
