@@ -52,15 +52,34 @@ export const validateSessionToken = async (sessionToken: string) => {
       select: {
         id: true,
         email: true,
-        organizationRoles: true,
-        organizations: true,
-        ownedOrganizations: true,
-        ownedProjects: true,
-        projectRoles: true,
-        projects: true,
         name: true,
         createdAt: true,
         updatedAt: true,
+        organizationRoles: true,
+        organizations: {
+          include: {
+            users: true,
+            userRoles: {
+              include: {
+                user: true,
+              },
+            },
+            owner: true,
+          },
+        },
+        ownedOrganizations: {
+          include: {
+            users: true,
+            userRoles: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+        ownedProjects: true,
+        projectRoles: true,
+        projects: true,
       },
     });
 
@@ -75,11 +94,7 @@ export const validateSessionToken = async (sessionToken: string) => {
 
     return {
       valid: true,
-      user: {
-        ...user,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-      },
+      user,
     };
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {

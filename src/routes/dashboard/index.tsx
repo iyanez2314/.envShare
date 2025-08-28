@@ -30,7 +30,7 @@ function RouteComponent() {
     onSuccess: (ctx: any) => {
       if (ctx.data?.success) {
         setShowOrganizationForm(!showOrganizationForm);
-        setOrganizations((prev) => [...prev, ctx?.data?.data as Organization]);
+        setOrganizations((prev) => [...prev, ctx.data.data as Organization]);
       }
     },
   });
@@ -117,14 +117,7 @@ function RouteComponent() {
 
   useEffect(() => {
     if (user?.organizations) {
-      const formattedOrgs: Organization[] = user.organizations.map((org) => ({
-        ...org,
-        description: org.description ?? undefined,
-        createdAt: org.createdAt.toString(),
-        updatedAt: org.updatedAt.toString(),
-        teamMembers: [],
-      }));
-      setOrganizations(formattedOrgs);
+      setOrganizations(user.organizations as Organization[]);
     }
   }, [user?.organizations]);
 

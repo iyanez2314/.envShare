@@ -32,6 +32,15 @@ export const createOrganizationFn = createServerFn({ method: "POST" })
             connect: { id: user.id },
           },
         },
+        include: {
+          userRoles: {
+            include: {
+              user: true,
+            },
+          },
+          users: true,
+          owner: true,
+        },
       });
 
       return {

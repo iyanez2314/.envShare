@@ -53,14 +53,13 @@ export function OrganizationCard({
 }: OrganizationCardProps) {
   const navigate = useNavigate();
 
-  console.log("organization in OrganizationCard:", organization);
-  console.log("currentUserId in OrganizationCard:", currentUserId);
-
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showTeamDialog, setShowTeamDialog] = useState(false);
 
   const isOwner = organization.ownerId === currentUserId;
-  const userRole = organization.users?.find((u) => u.id === currentUserId);
+  const userRole =
+    organization.userRoles?.find((ur) => ur.userId === currentUserId)?.role ||
+    (isOwner ? "OWNER" : null);
 
   // Handle card click to navigate to organization details
 
@@ -90,7 +89,7 @@ export function OrganizationCard({
           <Building2 className="h-8 w-8 text-primary" />
           <div className="flex items-center gap-2">
             <Badge variant="secondary">{projectCount} projects</Badge>
-            {(isOwner || userRole === "editor") && (
+            {(isOwner || userRole === "OWNER") && (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   asChild
@@ -149,7 +148,7 @@ export function OrganizationCard({
             <span>{organization.users?.length || 0} members</span>
           </div>
           <Badge variant="outline" className="text-xs">
-            {userRole}
+            {userRole || "MEMBER"}
           </Badge>
         </div>
       </div>
