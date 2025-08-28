@@ -34,9 +34,9 @@ import { useNavigate } from "@tanstack/react-router";
 interface OrganizationCardProps {
   organization: Organization;
   projectCount: number;
-  currentUserId: number;
+  currentUserId: number | null;
   onEdit: (org: Organization) => void;
-  onDelete: (orgId: number) => void;
+  onDelete: (orgId: string | number) => void;
   onUpdate: (org: Organization) => void;
 }
 

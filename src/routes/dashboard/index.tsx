@@ -6,7 +6,12 @@ import { OrganizationForm } from "@/components/organization-form";
 import { OrganizationCard } from "@/components/organization-card";
 import type { Organization, TeamMember } from "@/interfaces";
 import { useMutation } from "@/hooks/useMutation";
-import { createOrganizationFn } from "@/server-functions/organization-functions";
+import {
+  createOrganizationFn,
+  deleteOrganizationFn,
+} from "@/server-functions/organization-functions";
+import { toast } from "sonner";
+import type { User } from "@/interfaces";
 
 export const Route = createFileRoute("/dashboard/")({
   component: RouteComponent,
@@ -21,25 +26,45 @@ function RouteComponent() {
 
   const createOrganizationMutation = useMutation({
     fn: createOrganizationFn,
+    onSuccess: (ctx: any) => {
+      if (ctx.data?.success) {
+        toast.success("Created organization successfully!");
+        setShowOrganizationForm(!showOrganizationForm);
+        setOrganizations((prev) => [...prev, ctx?.data?.data as Organization]);
+      }
+    },
   });
 
-  const {
-    status: createStatus,
-    data: createOrgData,
-    error: createOrgError,
-  } = createOrganizationMutation;
+  const deleteOrganizationMutation = useMutation({
+    fn: async (orgId: string | number) => {
+      return deleteOrganizationFn({ data: { orgId } });
+    },
+    onSuccess: (ctx: any) => {
+      if (ctx.data?.success) {
+        toast.success("Deleted organization successfully!");
+        if (selectedOrgForEdit) {
+          setSelectedOrgForEdit(null);
+        }
 
-  useEffect(() => {
-    console.log("status", createStatus);
-    console.log("data", createOrgData);
-  }, [createStatus, createOrgData]);
+        setOrganizations((prev) =>
+          prev.filter((org) => org.id !== ctx?.data?.removedOrgId),
+        );
+      }
+    },
+  });
+
+  const { status: createStatus } = createOrganizationMutation;
 
   const addOrganization = async (
     orgData: Omit<Organization, "id" | "createdAt" | "teamMembers" | "ownerId">,
-    teamMembers?: TeamMember[],
+    teamMembers?: User[],
   ) => {
     createOrganizationMutation.mutate({
-      data: { name: orgData.name, description: orgData.description },
+      data: {
+        name: orgData.name,
+        description: orgData.description,
+        teamMembers,
+      },
     });
   };
 
@@ -49,9 +74,26 @@ function RouteComponent() {
     );
   };
 
-  const deleteOrganization = (orgId: number) => {
-    setOrganizations((prev) => prev.filter((org) => org.id !== orgId));
+  const deleteOrganization = (orgId: string | number) => {
+    toast.promise(deleteOrganizationMutation.mutate(orgId), {
+      loading: "Deleting organization...",
+      success: "Organization deleted!",
+      error: "Failed to delete organization.",
+    });
   };
+
+  useEffect(() => {
+    if (user?.organizations) {
+      const formattedOrgs: Organization[] = user.organizations.map((org) => ({
+        ...org,
+        description: org.description ?? undefined,
+        createdAt: org.createdAt.toString(),
+        updatedAt: org.updatedAt.toString(),
+        teamMembers: [],
+      }));
+      setOrganizations(formattedOrgs);
+    }
+  }, [user?.organizations]);
 
   return (
     <div>
@@ -88,12 +130,12 @@ function RouteComponent() {
         </div>
 
         {/* Existing Organizations */}
-        {user?.organizations?.map((org) => (
+        {organizations.map((org) => (
           <OrganizationCard
             key={org.id}
             organization={org}
             projectCount={0}
-            currentUserId={user?.id}
+            currentUserId={user?.id ?? null}
             onEdit={setSelectedOrgForEdit}
             onDelete={deleteOrganization}
             onUpdate={updateOrganization}
@@ -104,6 +146,7 @@ function RouteComponent() {
       {/* Organization Form Modal */}
       {showOrganizationForm && (
         <OrganizationForm
+          status={createStatus}
           onSubmit={addOrganization}
           onClose={() => setShowOrganizationForm(false)}
         />
@@ -114,7 +157,8 @@ function RouteComponent() {
         <OrganizationForm
           organization={selectedOrgForEdit}
           onSubmit={(data, teamMembers) => {
-            const ownerMember = selectedOrgForEdit.teamMembers.find(
+            // Find owner from teamMembers if it exists
+            const ownerMember = selectedOrgForEdit?.teamMembers?.find(
               (m) => m.role === "owner",
             );
             const updatedTeamMembers = ownerMember

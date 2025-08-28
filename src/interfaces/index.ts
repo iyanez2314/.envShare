@@ -24,6 +24,8 @@ export interface Organization {
   users?: User[];
   projects?: Project[];
   userRoles?: UserOrganizationRole[];
+  // Legacy property for compatibility
+  teamMembers?: TeamMember[];
 }
 
 export interface Project {
@@ -80,8 +82,8 @@ export interface UserProjectRole {
 
 // Legacy interfaces for backward compatibility (can be removed after migration)
 export interface TeamMember {
-  id: string;
+  id: number | string; // Support both for compatibility
   email: string;
-  role: "owner" | "editor" | "viewer";
+  role: "owner" | "editor" | "viewer" | OrganizationRole;
   addedAt: string;
 }
