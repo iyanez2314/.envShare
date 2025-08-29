@@ -27,7 +27,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { OrganizationTeamDialog } from "@/components/organization-team-dialog";
+import { OrganizationMembersTable } from "@/components/organization-member-table";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import type { Organization } from "@/interfaces";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -175,13 +181,21 @@ export function OrganizationCard({
         </AlertDialogContent>
       </AlertDialog>
 
-      {showTeamDialog && (
-        <OrganizationTeamDialog
-          organization={organization}
-          onUpdate={onUpdate}
-          onClose={() => setShowTeamDialog(false)}
-        />
-      )}
+      <Drawer open={showTeamDialog} onOpenChange={setShowTeamDialog}>
+        <DrawerContent className="max-h-[95vh] h-[95vh]">
+          <DrawerHeader>
+            <DrawerTitle>Team Management - {organization.name}</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-y-auto flex-1">
+            <OrganizationMembersTable
+              organization={organization}
+              currentUserId={currentUserId}
+              onUpdate={onUpdate}
+              onClose={() => setShowTeamDialog(false)}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
