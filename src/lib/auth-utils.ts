@@ -46,7 +46,7 @@ export const validateSessionToken = async (sessionToken: string) => {
       audience: "envshare-users",
     }) as JWTPayload;
 
-    // Get user from database to ensure they still exist
+    // Get minimal user data for authentication context only
     const user = await prismaClient.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -55,31 +55,6 @@ export const validateSessionToken = async (sessionToken: string) => {
         name: true,
         createdAt: true,
         updatedAt: true,
-        organizationRoles: true,
-        organizations: {
-          include: {
-            users: true,
-            userRoles: {
-              include: {
-                user: true,
-              },
-            },
-            owner: true,
-          },
-        },
-        ownedOrganizations: {
-          include: {
-            users: true,
-            userRoles: {
-              include: {
-                user: true,
-              },
-            },
-          },
-        },
-        ownedProjects: true,
-        projectRoles: true,
-        projects: true,
       },
     });
 

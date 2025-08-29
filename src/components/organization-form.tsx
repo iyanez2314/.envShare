@@ -37,7 +37,6 @@ interface OrganizationFormProps {
 
 export function OrganizationForm({
   organization,
-  error,
   onSubmit,
   status = "idle",
   onClose,

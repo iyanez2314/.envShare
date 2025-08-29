@@ -6,51 +6,51 @@ import { Plus, Building2, ArrowLeft } from "lucide-react";
 import { ProjectForm } from "@/components/project-form";
 import { ProjectCard } from "@/components/project-card";
 import type { Project, Organization } from "@/interfaces";
+import { getOrganizationProjectsFn } from "@/server-functions";
+import { createOrganizationProjectFn } from "@/server-functions/project-functions";
+import { useMutation } from "@/hooks/useMutation";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/organization/$id")({
   component: RouteComponent,
+  loader: async ({ params }) => {
+    if (!params.id) {
+      throw new Error("Organization ID is required");
+    }
+    const orgData = await getOrganizationProjectsFn({
+      data: { organizationId: params.id },
+    });
+
+    if (!orgData.success) {
+      throw new Error(orgData.message || "Failed to load organization data");
+    }
+    return orgData.data;
+  },
 });
 
 function RouteComponent() {
-  const { id } = Route.useParams();
+  const { user } = Route.useRouteContext();
+  const loaderData = Route.useLoaderData();
   const navigate = useNavigate();
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [organization, setOrganization] = useState<Organization>(
+    loaderData?.organization || [],
+  );
+  const [projects, setProjects] = useState<Project[]>(
+    loaderData.projects || [],
+  );
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [currentUserId] = useState("current-user-id");
+  const currentUserId = user?.id;
 
-  useEffect(() => {
-    // Load organization data
-    const savedOrganizations = localStorage.getItem("github-organizations");
-    if (savedOrganizations) {
-      const orgs: Organization[] = JSON.parse(savedOrganizations);
-      const org = orgs.find((o) => o.id === id);
-      setOrganization(org || null);
-    }
-
-    // Load projects data
-    const savedProjects = localStorage.getItem("github-projects");
-    if (savedProjects) {
-      const allProjects: Project[] = JSON.parse(savedProjects);
-      const orgProjects = allProjects.filter((p) => p.organizationId === id);
-      setProjects(orgProjects);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    // Save projects when they change
-    const savedProjects = localStorage.getItem("github-projects");
-    const allProjects: Project[] = savedProjects
-      ? JSON.parse(savedProjects)
-      : [];
-
-    // Remove old projects for this org and add current ones
-    const otherProjects = allProjects.filter((p) => p.organizationId !== id);
-    const updatedProjects = [...otherProjects, ...projects];
-
-    localStorage.setItem("github-projects", JSON.stringify(updatedProjects));
-  }, [projects, id]);
+  const createProjectMutatoin = useMutation({
+    fn: createOrganizationProjectFn,
+    onSuccess: (ctx: any) => {
+      if (ctx.data?.success) {
+        setShowProjectForm(!showProjectForm);
+        setProjects((prev) => [...prev, ctx.data.data as Project]);
+      }
+    },
+  });
 
   const addProject = (
     projectData: Omit<
@@ -58,23 +58,21 @@ function RouteComponent() {
       "id" | "createdAt" | "teamMembers" | "ownerId" | "organizationId"
     >,
   ) => {
-    const newProject: Project = {
-      ...projectData,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      organizationId: id,
-      teamMembers: [
-        {
-          id: crypto.randomUUID(),
-          email: "you@example.com",
-          role: "owner",
-          addedAt: new Date().toISOString(),
-        },
-      ],
-      ownerId: currentUserId,
-    };
-    setProjects((prev) => [...prev, newProject]);
-    setShowProjectForm(false);
+    if (!organization.id) {
+      toast.error("Organization ID is missing");
+      return;
+    }
+
+    toast.promise(
+      createProjectMutatoin.mutate({
+        data: { ...projectData, organizationId: organization.id },
+      }),
+      {
+        loading: "Creating project...",
+        success: "Project created successfully!",
+        error: "Failed to create project",
+      },
+    );
   };
 
   const updateProject = (updatedProject: Project) => {
@@ -83,24 +81,9 @@ function RouteComponent() {
     );
   };
 
-  const deleteProject = (projectId: string) => {
+  const deleteProject = (projectId: number) => {
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
   };
-
-  if (!organization) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2">
-            Organization not found
-          </h2>
-          <Button onClick={() => navigate({ to: "/dashboard" })}>
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div>

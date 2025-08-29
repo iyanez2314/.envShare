@@ -4,6 +4,8 @@ import { prismaClient } from "@/services/prisma";
 import { requireOrganizationOwner } from "@/lib/role-utils";
 import { User } from "@/interfaces";
 
+export * from "./user-organizations";
+
 export const createOrganizationFn = createServerFn({ method: "POST" })
   .validator(
     (data: { name: string; description?: string; teamMembers?: User[] }) =>

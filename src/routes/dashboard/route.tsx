@@ -2,6 +2,8 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { GitBranch } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
 import { validateIncomingRequestFn } from "@/server-functions";
+import { Suspense } from "react";
+import { LoadingAnimation } from "@/components/loading-animation";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayoutComponent,
@@ -45,7 +47,9 @@ function DashboardLayoutComponent() {
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <Outlet />
+        <Suspense fallback={<LoadingAnimation />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

@@ -26,6 +26,11 @@ export interface Organization {
   userRoles?: UserOrganizationRole[];
   // Legacy property for compatibility
   teamMembers?: TeamMember[];
+  // Prisma count fields
+  _count?: {
+    projects?: number;
+    users?: number;
+  };
 }
 
 export interface Project {
