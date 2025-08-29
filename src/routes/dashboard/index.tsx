@@ -1,63 +1,116 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { OrganizationForm } from "@/components/organization-form";
 import { OrganizationCard } from "@/components/organization-card";
 import type { Organization, TeamMember } from "@/interfaces";
+import {
+  createOrganizationFn,
+  deleteOrganizationFn,
+  updateOrganizationFn,
+  getUserOrganizationsFn,
+} from "@/server-functions/organization-functions";
+import { toast } from "sonner";
+import type { User } from "@/interfaces";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const { user } = Route.useRouteContext();
+  const queryClient = useQueryClient();
   const [showOrganizationForm, setShowOrganizationForm] = useState(false);
   const [selectedOrgForEdit, setSelectedOrgForEdit] =
     useState<Organization | null>(null);
-  const [currentUserId] = useState("current-user-id");
 
-  useEffect(() => {
-    const savedOrganizations = localStorage.getItem("github-organizations");
-    if (savedOrganizations) {
-      setOrganizations(JSON.parse(savedOrganizations));
-    }
-  }, []);
+  const { data: organizationResponse } = useSuspenseQuery({
+    queryKey: ["organizations"],
+    queryFn: getUserOrganizationsFn,
+  });
 
-  useEffect(() => {
-    localStorage.setItem("github-organizations", JSON.stringify(organizations));
-  }, [organizations]);
+  const organizations = organizationResponse?.data || [];
 
-  const addOrganization = (
-    orgData: Omit<Organization, "id" | "createdAt" | "teamMembers" | "ownerId">,
-    teamMembers?: TeamMember[],
-  ) => {
-    const ownerMember: TeamMember = {
-      id: crypto.randomUUID(),
-      email: "you@example.com",
-      role: "owner",
-      addedAt: new Date().toISOString(),
-    };
+  const createOrganizationMutation = useMutation({
+    mutationFn: createOrganizationFn,
+  });
 
-    const newOrganization: Organization = {
-      ...orgData,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      teamMembers: [ownerMember, ...(teamMembers || [])],
-      ownerId: currentUserId,
-    };
-    setOrganizations((prev) => [...prev, newOrganization]);
+  const updateOrganizationMutation = useMutation({
+    mutationFn: updateOrganizationFn,
+  });
+
+  const deleteOrganizationMutation = useMutation({
+    mutationFn: async (orgId: string | number) => {
+      return deleteOrganizationFn({ data: { orgId } });
+    },
+  });
+
+  const { status: createStatus } = createOrganizationMutation;
+  const { status: updateStatus } = updateOrganizationMutation;
+  const { status: deleteStatus } = deleteOrganizationMutation;
+
+  const handleDeleteOrganization = (orgId: string | number) => {
     setShowOrganizationForm(false);
+    toast.promise(deleteOrganizationMutation.mutateAsync(orgId), {
+      loading: "Deleting organization...",
+      success: () => {
+        queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        return "Organization deleted successfully!";
+      },
+      error: "Failed to delete organization",
+    });
   };
 
-  const updateOrganization = (updatedOrg: Organization) => {
-    setOrganizations((prev) =>
-      prev.map((org) => (org.id === updatedOrg.id ? updatedOrg : org)),
+  const handleUpdateOrganization = (org: Organization) => {
+    setShowOrganizationForm(false);
+    toast.promise(
+      updateOrganizationMutation.mutateAsync({
+        data: {
+          orgId: org.id,
+          name: org.name,
+          description: org.description,
+        },
+      }),
+      {
+        loading: "Updating organization...",
+        success: () => {
+          queryClient.invalidateQueries({ queryKey: ["organizations"] });
+          return "Organization updated successfully!";
+        },
+        error: "Failed to update organization",
+      },
     );
   };
 
-  const deleteOrganization = (orgId: string) => {
-    setOrganizations((prev) => prev.filter((org) => org.id !== orgId));
+  const addOrganization = (data: {
+    name: string;
+    description?: string;
+    teamMembers?: User[];
+  }) => {
+    setShowOrganizationForm(false);
+    toast.promise(
+      createOrganizationMutation.mutateAsync({
+        data: {
+          name: data.name,
+          description: data.description,
+          teamMembers: data.teamMembers || [],
+        },
+      }),
+      {
+        loading: "Creating organization...",
+        success: () => {
+          queryClient.invalidateQueries({ queryKey: ["organizations"] });
+          return "Organization created successfully!";
+        },
+        error: "Failed to create organization",
+      },
+    );
   };
 
   return (
@@ -69,10 +122,7 @@ function RouteComponent() {
             Select an organization to manage its projects
           </p>
         </div>
-        <Badge
-          variant="secondary"
-          className="bg-muted text-muted-foreground"
-        >
+        <Badge variant="secondary" className="bg-muted text-muted-foreground">
           {organizations.length}{" "}
           {organizations.length === 1 ? "organization" : "organizations"}
         </Badge>
@@ -98,15 +148,18 @@ function RouteComponent() {
         </div>
 
         {/* Existing Organizations */}
-        {organizations.map((org) => (
+        {organizations?.map((org) => (
           <OrganizationCard
             key={org.id}
+            disableCardInteraction={
+              !!(updateStatus === "pending" || deleteStatus === "pending")
+            }
             organization={org}
-            projectCount={0}
-            currentUserId={currentUserId}
+            projectCount={org._count?.projects || org.projects?.length || 0}
+            currentUserId={user?.id ?? null}
             onEdit={setSelectedOrgForEdit}
-            onDelete={deleteOrganization}
-            onUpdate={updateOrganization}
+            onDelete={handleDeleteOrganization}
+            onUpdate={handleUpdateOrganization}
           />
         ))}
       </div>
@@ -114,6 +167,7 @@ function RouteComponent() {
       {/* Organization Form Modal */}
       {showOrganizationForm && (
         <OrganizationForm
+          status={createStatus}
           onSubmit={addOrganization}
           onClose={() => setShowOrganizationForm(false)}
         />
@@ -124,18 +178,13 @@ function RouteComponent() {
         <OrganizationForm
           organization={selectedOrgForEdit}
           onSubmit={(data, teamMembers) => {
-            const ownerMember = selectedOrgForEdit.teamMembers.find(
-              (m) => m.role === "owner",
-            );
-            const updatedTeamMembers = ownerMember
-              ? [ownerMember, ...(teamMembers || [])]
-              : teamMembers || [];
-            updateOrganization({
-              ...selectedOrgForEdit,
-              ...data,
-              teamMembers: updatedTeamMembers,
+            updateOrganizationMutation.mutate({
+              data: {
+                orgId: selectedOrgForEdit.id,
+                name: data.name,
+                description: data.description,
+              },
             });
-            setSelectedOrgForEdit(null);
           }}
           onClose={() => setSelectedOrgForEdit(null)}
         />

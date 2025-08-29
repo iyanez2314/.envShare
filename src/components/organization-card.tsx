@@ -30,14 +30,16 @@ import {
 import { OrganizationTeamDialog } from "@/components/organization-team-dialog";
 import type { Organization } from "@/interfaces";
 import { useNavigate } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 
 interface OrganizationCardProps {
   organization: Organization;
   projectCount: number;
-  currentUserId: string;
+  currentUserId: number | null;
   onEdit: (org: Organization) => void;
-  onDelete: (orgId: string) => void;
+  onDelete: (orgId: string | number) => void;
   onUpdate: (org: Organization) => void;
+  disableCardInteraction?: boolean;
 }
 
 export function OrganizationCard({
@@ -45,6 +47,7 @@ export function OrganizationCard({
   projectCount,
   currentUserId,
   onEdit,
+  disableCardInteraction = false,
   onDelete,
   onUpdate,
 }: OrganizationCardProps) {
@@ -55,9 +58,10 @@ export function OrganizationCard({
 
   const isOwner = organization.ownerId === currentUserId;
   const userRole =
-    organization.teamMembers?.find(
-      (member) => member.email === "you@example.com",
-    )?.role || "viewer";
+    organization.userRoles?.find((ur) => ur.userId === currentUserId)?.role ||
+    (isOwner ? "OWNER" : null);
+
+  // Handle card click to navigate to organization details
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger card click if clicking on dropdown menu
@@ -66,7 +70,7 @@ export function OrganizationCard({
     }
     navigate({
       to: "/dashboard/organization/$id",
-      params: { id: organization.id },
+      params: { id: organization.id.toString() },
     });
   };
 
@@ -74,15 +78,24 @@ export function OrganizationCard({
     <>
       <div
         onClick={handleCardClick}
-        className="h-full p-6 rounded-lg border border-border bg-card hover:bg-accent/50 cursor-pointer transition-colors relative"
+        className={cn(
+          "h-full p-6 rounded-lg border border-border bg-card hover:bg-accent/50 cursor-pointer transition-colors relative",
+          {
+            "pointer-events-none opacity-50": disableCardInteraction,
+          },
+        )}
       >
         <div className="flex items-start justify-between mb-4">
           <Building2 className="h-8 w-8 text-primary" />
           <div className="flex items-center gap-2">
             <Badge variant="secondary">{projectCount} projects</Badge>
-            {(isOwner || userRole === "editor") && (
+            {(isOwner || userRole === "OWNER") && (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild data-dropdown-trigger>
+                <DropdownMenuTrigger
+                  asChild
+                  data-dropdown-trigger
+                  disabled={disableCardInteraction}
+                >
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
@@ -132,10 +145,10 @@ export function OrganizationCard({
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            <span>{organization.teamMembers?.length || 0} members</span>
+            <span>{organization.users?.length || 0} members</span>
           </div>
           <Badge variant="outline" className="text-xs">
-            {userRole}
+            {userRole || "MEMBER"}
           </Badge>
         </div>
       </div>

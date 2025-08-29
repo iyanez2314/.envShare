@@ -1,12 +1,27 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { GitBranch } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
-import { isUserAuthedFn } from "@/server-functions/_index";
+import { validateIncomingRequestFn } from "@/server-functions";
+import { Suspense } from "react";
+import { LoadingAnimation } from "@/components/loading-animation";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayoutComponent,
   beforeLoad: async () => {
-    const isAuthed = await isUserAuthedFn();
+    const result = await validateIncomingRequestFn();
+
+    if (!result.valid) {
+      throw redirect({
+        to: "/",
+        search: {
+          redirect: "/dashboard",
+        },
+      });
+    }
+
+    return {
+      user: result.user,
+    };
   },
 });
 
@@ -32,7 +47,9 @@ function DashboardLayoutComponent() {
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <Outlet />
+        <Suspense fallback={<LoadingAnimation />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

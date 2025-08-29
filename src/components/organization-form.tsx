@@ -21,13 +21,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, X, Users } from "lucide-react";
-import type { Organization, TeamMember } from "@/interfaces";
+import type { Organization, TeamMember, User } from "@/interfaces";
+import { LoaderIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface OrganizationFormProps {
   organization?: Organization;
+  status?: "idle" | "pending" | "success" | "error";
   onSubmit: (
     data: Omit<Organization, "id" | "createdAt" | "teamMembers" | "ownerId">,
-    teamMembers?: TeamMember[],
+    teamMembers?: User[],
   ) => void;
   onClose: () => void;
 }
@@ -35,6 +38,7 @@ interface OrganizationFormProps {
 export function OrganizationForm({
   organization,
   onSubmit,
+  status = "idle",
   onClose,
 }: OrganizationFormProps) {
   const [formData, setFormData] = useState({
@@ -43,8 +47,7 @@ export function OrganizationForm({
   });
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(
-    organization?.teamMembers?.filter((member) => member.role !== "owner") ||
-      [],
+    organization?.users?.filter((member) => member.role !== "owner") || [],
   );
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<"owner" | "member">(
@@ -75,6 +78,28 @@ export function OrganizationForm({
     if (!formData.name.trim()) return;
 
     onSubmit(formData, teamMembers);
+  };
+
+  const renderButtonText = () => {
+    if (status === "pending") {
+      return organization ? (
+        <>
+          <LoaderIcon className="mr-2 size-4 animate-spin" />
+          <p> Updating... </p>
+        </>
+      ) : (
+        <>
+          <LoaderIcon className="mr-2 size-4 animate-spin" />
+          <p> Creating... </p>
+        </>
+      );
+    }
+
+    if (status === "error") {
+      return organization ? "Retry Update" : "Retry Create";
+    }
+
+    return organization ? "Update Organization" : "Create Organization";
   };
 
   return (
@@ -209,10 +234,17 @@ export function OrganizationForm({
               Cancel
             </Button>
             <Button
+              disabled={!formData.name.trim() || status === "pending"}
               type="submit"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className={cn(
+                "bg-primary text-primary-foreground hover:bg-primary/90",
+                {
+                  "opacity-70 cursor-not-allowed": status === "pending",
+                  "bg-red-600 hover:bg-red-700": status === "error",
+                },
+              )}
             >
-              {organization ? "Update Organization" : "Create Organization"}
+              {renderButtonText()}
             </Button>
           </div>
         </form>
