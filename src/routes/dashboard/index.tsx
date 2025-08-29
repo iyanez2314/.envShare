@@ -39,24 +39,10 @@ function RouteComponent() {
 
   const createOrganizationMutation = useMutation({
     mutationFn: createOrganizationFn,
-    onSuccess: (ctx: any) => {
-      if (ctx.data?.success) {
-        queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      }
-    },
   });
 
   const updateOrganizationMutation = useMutation({
     mutationFn: updateOrganizationFn,
-    onSuccess: (ctx: any) => {
-      if (ctx.data?.success) {
-        if (selectedOrgForEdit) {
-          setSelectedOrgForEdit(null);
-        }
-        toast.success("Organization updated successfully");
-        queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      }
-    },
   });
 
   const deleteOrganizationMutation = useMutation({
