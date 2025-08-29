@@ -1,8 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { TeamMember } from "@/interfaces";
+import type { User } from "@/interfaces";
 
 interface TeamMemberAvatarProps {
-  teamMembers: TeamMember[];
+  teamMembers: User[];
 }
 
 export function TeamMemberAvatar({ teamMembers }: TeamMemberAvatarProps) {
@@ -11,7 +12,10 @@ export function TeamMemberAvatar({ teamMembers }: TeamMemberAvatarProps) {
     <div className="flex -space-x-2 mr-1">
       {teamMembers &&
         firstTwoMembers.map((member) => (
-          <Avatar key={member.id} className="h-6 w-6 border-2 border-background">
+          <Avatar
+            key={member.id}
+            className="h-6 w-6 border-2 border-background"
+          >
             <AvatarImage
               src="https://github.com/shadcn.png"
               alt={member.email}

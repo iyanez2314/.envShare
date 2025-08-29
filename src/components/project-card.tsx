@@ -46,22 +46,21 @@ export function ProjectCard({
   const [showEnvVars, setShowEnvVars] = useState(false);
   const [showTeamMembers, setShowTeamMembers] = useState(false);
 
-  const envVarCount = Object.keys(project.envVars).length;
+  const envVarCount = project?.envVars?.length || 0;
   const repoName =
-    project.githubUrl.split("/").pop()?.replace(".git", "") || "Repository";
+    project?.githubUrl?.split("/").pop()?.replace(".git", "") || "Repository";
 
   const teamMembers = project.teamMembers || [];
+
   const currentUserMember = teamMembers.find(
-    (member) =>
-      member.id === currentUserId || member.email === "you@example.com",
+    (member) => member.id === currentUserId,
   );
-  const userRole =
-    project.ownerId === currentUserId
-      ? "owner"
-      : currentUserMember?.role || "viewer";
-  const canEdit = userRole === "owner" || userRole === "editor";
-  const canDelete = userRole === "owner";
-  const canManageTeam = userRole === "owner";
+
+  const userRole = project.ownerId === currentUserId ? "OWNER" : "VIEWER";
+
+  const canEdit = userRole === "OWNER";
+  const canDelete = userRole === "OWNER";
+  const canManageTeam = userRole === "OWNER";
 
   return (
     <>
@@ -138,7 +137,7 @@ export function ProjectCard({
                 variant="secondary"
                 className="bg-muted text-muted-foreground py-1 px-2 flex items-center"
               >
-                <TeamMemberAvatar teamMembers={project.teamMembers} />
+                <TeamMemberAvatar teamMembers={project.teamMembers || []} />
                 {teamMembers.length}{" "}
                 {teamMembers.length === 1 ? "member" : "members"}
               </Badge>
@@ -146,7 +145,7 @@ export function ProjectCard({
 
             <div className="flex items-center gap-1">
               <Badge
-                variant={userRole === "owner" ? "default" : "secondary"}
+                variant={userRole === "OWNER" ? "default" : "secondary"}
                 className="text-xs"
               >
                 {userRole}
