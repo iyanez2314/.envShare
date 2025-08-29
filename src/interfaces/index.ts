@@ -6,7 +6,7 @@ export type OrganizationRole = "OWNER" | "MEMBER";
 export interface User {
   id: number;
   email: string;
-  name?: string;
+  name: string | null;
   password: string;
   createdAt: Date;
   updatedAt: Date;
@@ -15,7 +15,7 @@ export interface User {
 export interface Organization {
   id: number;
   name: string;
-  description?: string;
+  description: string | null;
   ownerId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -36,8 +36,8 @@ export interface Organization {
 export interface Project {
   id: number;
   name: string;
-  description?: string;
-  githubUrl?: string;
+  description: string | null;
+  githubUrl: string | null;
   organizationId: number;
   ownerId: number;
   createdAt: Date;
@@ -83,6 +83,13 @@ export interface UserProjectRole {
   // Relations (optional, loaded when needed)
   user?: User;
   project?: Project;
+}
+
+// API Response Interfaces
+export interface OrganizationProjectsResponse {
+  organization: Organization;
+  projects: Project[];
+  projectCount: number;
 }
 
 // Legacy interfaces for backward compatibility (can be removed after migration)

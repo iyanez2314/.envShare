@@ -5,9 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Building2, ArrowLeft } from "lucide-react";
 import { ProjectForm } from "@/components/project-form";
 import { ProjectCard } from "@/components/project-card";
-import type { Project, Organization } from "@/interfaces";
+import type {
+  Project,
+  Organization,
+  OrganizationProjectsResponse,
+} from "@/interfaces";
 import { getOrganizationProjectsFn } from "@/server-functions";
-import { createOrganizationProjectFn } from "@/server-functions/project-functions";
+import {
+  createOrganizationProjectFn,
+  updateOrganizationProjectFn,
+  deleteOrganizationProjectFn,
+} from "@/server-functions/project-functions";
 import {
   useMutation,
   useQueryClient,
@@ -34,13 +42,27 @@ function RouteComponent() {
       getOrganizationProjectsFn({ data: { organizationId: id as string } }),
   });
 
-  const projectObj = projectsResponse?.data || [];
+  const projectObj: OrganizationProjectsResponse = projectsResponse?.data || {
+    organization: {} as Organization,
+    projects: [],
+    projectCount: 0,
+  };
 
   const createProjectMutation = useMutation({
     mutationFn: createOrganizationProjectFn,
   });
 
+  const updateProjectMutation = useMutation({
+    mutationFn: updateOrganizationProjectFn,
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: deleteOrganizationProjectFn,
+  });
+
   const { status: createStatus } = createProjectMutation;
+  const { status: updateStatus } = updateProjectMutation;
+  const { status: deleteStatus } = deleteProjectMutation;
 
   const addProject = (
     projectData: Omit<
@@ -69,9 +91,47 @@ function RouteComponent() {
     );
   };
 
-  const updateProject = (updatedProject: Project) => {};
+  const updateProject = (updatedProject: Project) => {
+    setShowProjectForm(false);
+    toast.promise(
+      updateProjectMutation.mutateAsync({
+        data: {
+          projectId: updatedProject.id,
+          name: updatedProject.name,
+          description: updatedProject.description,
+          githubUrl: updatedProject.githubUrl,
+        },
+      }),
+      {
+        loading: "Updating project...",
+        success: (data) => {
+          queryClient.invalidateQueries({
+            queryKey: ["organization-projects", id],
+          });
+          return `Project updated successfully!`;
+        },
+        error: (err) => `Error updating project: ${err.message}`,
+      },
+    );
+  };
 
-  const deleteProject = (projectId: number) => {};
+  const deleteProject = (projectId: number) => {
+    toast.promise(
+      deleteProjectMutation.mutateAsync({
+        data: { projectId },
+      }),
+      {
+        loading: "Deleting project...",
+        success: (data) => {
+          queryClient.invalidateQueries({
+            queryKey: ["organization-projects", id],
+          });
+          return `Project deleted successfully!`;
+        },
+        error: (err) => `Error deleting project: ${err.message}`,
+      },
+    );
+  };
 
   return (
     <div>
@@ -106,6 +166,7 @@ function RouteComponent() {
             </p>
           </div>
           <Badge variant="secondary" className="bg-muted text-muted-foreground">
+            {projectObj.projectCount}{" "}
             {projectObj.projectCount === 1 ? "project" : "projects"}
           </Badge>
         </div>

@@ -82,8 +82,8 @@ export const createOrganizationProjectFn = createServerFn({ method: "POST" })
     (data: {
       organizationId: number;
       name: string;
-      description?: string;
-      githubUrl?: string;
+      description: string | null;
+      githubUrl: string | null;
     }) => data,
   )
   .handler(async ({ data }) => {
@@ -113,8 +113,8 @@ export const createOrganizationProjectFn = createServerFn({ method: "POST" })
       const newProject = await prismaClient.project.create({
         data: {
           name: data.name,
-          description: data.description,
-          githubUrl: data.githubUrl,
+          description: data.description || null,
+          githubUrl: data.githubUrl || null,
           organizationId: data.organizationId,
           ownerId: user.id,
           teamMembers: {
@@ -140,6 +140,137 @@ export const createOrganizationProjectFn = createServerFn({ method: "POST" })
       };
     } catch (error) {
       console.error("Error creating project:", error);
+      throw new Error("Internal Server Error");
+    }
+  });
+
+export const updateOrganizationProjectFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      projectId: number;
+      name: string;
+      description: string | null;
+      githubUrl: string | null;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { user, valid } = await validateIncomingRequestFn();
+
+      if (!user || !valid) {
+        throw new Error("Unauthorized");
+      }
+
+      // First check if the project exists and user has access
+      const existingProject = await prismaClient.project.findUnique({
+        where: { id: data.projectId },
+        include: { organization: true },
+      });
+
+      if (!existingProject) {
+        return {
+          success: false,
+          message: "Project not found",
+        };
+      }
+
+      // Check if user has access to this organization
+      const roleCheck = await checkOrganizationRole(
+        user.id,
+        existingProject.organizationId,
+        "OWNER",
+      );
+
+      if (!roleCheck.hasAccess) {
+        return {
+          success: false,
+          message:
+            roleCheck.error ||
+            "Forbidden: No access to update project in this organization",
+        };
+      }
+
+      // Update the project
+      const updatedProject = await prismaClient.project.update({
+        where: { id: data.projectId },
+        data: {
+          name: data.name,
+          description: data.description || null,
+          githubUrl: data.githubUrl || null,
+        },
+        include: {
+          owner: true,
+          organization: true,
+          envVars: true,
+          userRoles: {
+            include: {
+              user: true,
+            },
+          },
+          teamMembers: true,
+        },
+      });
+
+      return {
+        success: true,
+        data: updatedProject,
+      };
+    } catch (error) {
+      console.error("Error updating project:", error);
+      throw new Error("Internal Server Error");
+    }
+  });
+
+export const deleteOrganizationProjectFn = createServerFn({ method: "POST" })
+  .validator((data: { projectId: number }) => data)
+  .handler(async ({ data }) => {
+    try {
+      const { user, valid } = await validateIncomingRequestFn();
+
+      if (!user || !valid) {
+        throw new Error("Unauthorized");
+      }
+
+      // First check if the project exists and user has access
+      const existingProject = await prismaClient.project.findUnique({
+        where: { id: data.projectId },
+        include: { organization: true },
+      });
+
+      if (!existingProject) {
+        return {
+          success: false,
+          message: "Project not found",
+        };
+      }
+
+      // Check if user has access to this organization
+      const roleCheck = await checkOrganizationRole(
+        user.id,
+        existingProject.organizationId,
+        "OWNER",
+      );
+
+      if (!roleCheck.hasAccess) {
+        return {
+          success: false,
+          message:
+            roleCheck.error ||
+            "Forbidden: No access to delete project in this organization",
+        };
+      }
+
+      // Delete the project (this will cascade delete related records)
+      await prismaClient.project.delete({
+        where: { id: data.projectId },
+      });
+
+      return {
+        success: true,
+        message: "Project deleted successfully",
+      };
+    } catch (error) {
+      console.error("Error deleting project:", error);
       throw new Error("Internal Server Error");
     }
   });
