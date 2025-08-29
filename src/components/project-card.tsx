@@ -30,9 +30,9 @@ import { TeamMemberAvatar } from "./team-member-icons";
 
 interface ProjectCardProps {
   project: Project;
-  currentUserId: string;
+  currentUserId: number | undefined;
   onEdit: (project: Project) => void;
-  onDelete: (projectId: string) => void;
+  onDelete: (projectId: number) => void;
   onUpdate: (project: Project) => void;
 }
 
