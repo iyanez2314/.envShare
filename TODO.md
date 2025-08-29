@@ -2,7 +2,7 @@
 
 ## 🎯 Current Sprint
 
-- [ ] **Fix Type Errors** - Resolve remaining TypeScript issues in components
+- [ ] **Fix Type Errors** - Resolve remaining TypeScript issues in components (this is going to be ongoing so I will solve as they come up)
 - [ ] **User Invitations** - Implement invite user feature with email notifications
 - [ ] **Add Middleware To Each ServerFn** - I need to look into this more I am not sure how to exactly do this but I know this is a thing and is best practice
 
