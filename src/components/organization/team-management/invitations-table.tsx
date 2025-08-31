@@ -9,21 +9,30 @@ import {
 } from "@/components/ui/table";
 import { UserPlus } from "lucide-react";
 import { InvitationRow } from "./invitation-row";
+import type { User } from "@/interfaces";
+import { OrganizationRole } from "@prisma/client";
 
-interface Invitation {
+export interface Invitation {
   id: string | number;
   email: string;
   role: string;
-  invitedBy: string;
   status: string;
-  invitedAt: Date;
+  createdAt: Date;
+  inviter: {
+    id: string | number;
+    name: string | null;
+    email: string | null;
+  } | null;
 }
 
 interface InvitationsTableProps {
   invitations: Invitation[];
   onInviteUser: () => void;
   onResendInvitation: (invitationId: string | number) => void;
-  onChangeInvitationRole: (invitationId: string | number) => void;
+  onChangeInvitationRole: (
+    invitationId: string,
+    newRole: OrganizationRole,
+  ) => void;
   onCancelInvitation: (invitationId: string | number) => void;
 }
 
@@ -40,7 +49,11 @@ export function InvitationsTable({
         <div className="text-sm text-muted-foreground">
           Send invitations to add new members to this organization
         </div>
-        <Button onClick={onInviteUser} size="sm" className="flex items-center gap-2">
+        <Button
+          onClick={onInviteUser}
+          size="sm"
+          className="flex items-center gap-2"
+        >
           <UserPlus className="h-4 w-4" />
           Invite User
         </Button>

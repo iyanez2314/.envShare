@@ -5,8 +5,19 @@ import {
   InviteUserDialog,
   TeamManagementTabs,
   MembersTable,
-  InvitationsTable
+  InvitationsTable,
 } from "./team-management";
+import {
+  useSuspenseQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getOrganizationInvitationsFn,
+  updateInvitedUserRoleChangeFn,
+} from "@/server-functions/invitation-functions";
+import { toast } from "sonner";
+import { OrganizationRole } from "@prisma/client";
 
 interface OrganizationMembersTableProps {
   organization: Organization;
@@ -19,8 +30,21 @@ export function OrganizationMembersTable({
   organization,
   currentUserId,
 }: OrganizationMembersTableProps) {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("members");
   const [showInviteModal, setShowInviteModal] = useState(false);
+
+  const { data: invitationsResponse } = useSuspenseQuery({
+    queryKey: ["organization-invitations", organization.id],
+    queryFn: () =>
+      getOrganizationInvitationsFn({ data: { orgId: organization.id } }),
+  });
+
+  const updateInvitationRoleMutation = useMutation({
+    mutationFn: updateInvitedUserRoleChangeFn,
+  });
+
+  const invitations = invitationsResponse?.data || [];
 
   // Get organization members with their roles
   const members =
@@ -40,9 +64,6 @@ export function OrganizationMembersTable({
       };
     }) || [];
 
-  // Placeholder for invitations - will be implemented later
-  const invitations: any[] = [];
-
   const handleInviteUser = (data: {
     email: string;
     role: "OWNER" | "MEMBER";
@@ -55,27 +76,43 @@ export function OrganizationMembersTable({
   };
 
   const handleRoleChange = (memberId: number) => {
-    // TODO: Implement role change logic
     console.log("Changing role for member:", memberId);
   };
 
   const handleRemoveMember = (memberId: number) => {
-    // TODO: Implement remove member logic
     console.log("Removing member:", memberId);
   };
 
   const handleResendInvitation = (invitationId: string | number) => {
-    // TODO: Implement resend invitation logic
     console.log("Resending invitation:", invitationId);
   };
 
-  const handleChangeInvitationRole = (invitationId: string | number) => {
-    // TODO: Implement change invitation role logic
-    console.log("Changing invitation role:", invitationId);
+  const handleChangeInvitationRole = (
+    invitationId: string,
+    newRole: OrganizationRole,
+  ) => {
+    toast.promise(
+      updateInvitationRoleMutation.mutateAsync({
+        data: {
+          invitationId: invitationId,
+          updatedRole: newRole,
+          orgId: organization.id,
+        },
+      }),
+      {
+        loading: "Updating invitation role...",
+        success: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["organization-invitations", organization.id],
+          });
+          return "Invitation role updated successfully!";
+        },
+        error: "Failed to update invitation role",
+      },
+    );
   };
 
   const handleCancelInvitation = (invitationId: string | number) => {
-    // TODO: Implement cancel invitation logic
     console.log("Canceling invitation:", invitationId);
   };
 

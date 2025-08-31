@@ -10,21 +10,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Mail, Clock, MoreHorizontal } from "lucide-react";
-
-interface Invitation {
-  id: string | number;
-  email: string;
-  role: string;
-  invitedBy: string;
-  status: string;
-  invitedAt: Date;
-}
+import { cn } from "@/lib/utils";
+import { Invitation } from "./invitations-table";
+import { useState } from "react";
+import { OrganizationRole } from "@prisma/client";
 
 interface InvitationRowProps {
   invitation: Invitation;
   onResend?: (invitationId: string | number) => void;
-  onRoleChange?: (invitationId: string | number) => void;
+  onRoleChange?: (
+    invitationId: string | number,
+    newRole: OrganizationRole,
+  ) => void;
   onCancel?: (invitationId: string | number) => void;
 }
 
@@ -47,8 +52,20 @@ export function InvitationRow({
   onRoleChange,
   onCancel,
 }: InvitationRowProps) {
+  const [editingRole, setEditingRole] = useState(false);
+
+  const handleRoleChange = (newRole: OrganizationRole) => {
+    onRoleChange?.(invitation.id, newRole);
+    setEditingRole(false);
+  };
+
   return (
-    <TableRow key={invitation.id}>
+    <TableRow
+      key={invitation.id}
+      className={cn({
+        "opacity-50": invitation.status.toLowerCase() === "declined",
+      })}
+    >
       <TableCell>
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -58,10 +75,24 @@ export function InvitationRow({
         </div>
       </TableCell>
       <TableCell>
-        <RoleBadge role={invitation.role} />
+        {editingRole ? (
+          <Select value={invitation.role} onValueChange={handleRoleChange}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MEMBER">Member</SelectItem>
+              <SelectItem value="OWNER">Owner</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <RoleBadge role={invitation.role} />
+        )}
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
-        {invitation.invitedBy}
+        {invitation.inviter
+          ? invitation.inviter.name || invitation.inviter.email
+          : "System"}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
@@ -74,7 +105,7 @@ export function InvitationRow({
         </div>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
-        {new Date(invitation.invitedAt).toLocaleDateString()}
+        {new Date(invitation.createdAt.toISOString()).toLocaleDateString()}
       </TableCell>
       <TableCell>
         <DropdownMenu>
@@ -89,11 +120,11 @@ export function InvitationRow({
             <DropdownMenuItem onClick={() => onResend?.(invitation.id)}>
               Resend invitation
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onRoleChange?.(invitation.id)}>
+            <DropdownMenuItem onClick={() => setEditingRole(true)}>
               Change role
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="text-destructive"
               onClick={() => onCancel?.(invitation.id)}
             >
