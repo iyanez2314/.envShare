@@ -99,3 +99,35 @@ export const updateInvitedUserRoleChangeFn = createServerFn({
       throw new Error("Internal Server Error");
     }
   });
+
+export const cancelOrganizationInvitationFn = createServerFn({ method: "POST" })
+  .validator((data: { invitationId: string; orgId: number }) => data)
+  .handler(async ({ data }) => {
+    try {
+      const { user, valid } = await validateIncomingRequestFn();
+
+      if (!user || !valid) {
+        throw new Error("Unauthorized");
+      }
+      const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
+      const invitationId = data.invitationId;
+      const orgId =
+        typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
+
+      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+
+      if (!hasAccess) {
+        throw new Error("Forbidden: OWNER role required");
+      }
+
+      await prismaClient.organizationInvitation.update({
+        where: { id: invitationId },
+        data: { status: "CANCELLED" },
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error cancelling organization invitation:", error);
+      throw new Error("Internal Server Error");
+    }
+  });

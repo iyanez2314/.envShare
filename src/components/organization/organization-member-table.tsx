@@ -15,6 +15,7 @@ import {
 import {
   getOrganizationInvitationsFn,
   updateInvitedUserRoleChangeFn,
+  cancelOrganizationInvitationFn,
 } from "@/server-functions/invitation-functions";
 import { toast } from "sonner";
 import { OrganizationRole } from "@prisma/client";
@@ -30,6 +31,7 @@ export function OrganizationMembersTable({
   organization,
   currentUserId,
 }: OrganizationMembersTableProps) {
+  console.log("Organization data:", organization);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("members");
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -42,6 +44,10 @@ export function OrganizationMembersTable({
 
   const updateInvitationRoleMutation = useMutation({
     mutationFn: updateInvitedUserRoleChangeFn,
+  });
+
+  const cancelInvitationMutation = useMutation({
+    mutationFn: cancelOrganizationInvitationFn,
   });
 
   const invitations = invitationsResponse?.data || [];
@@ -112,8 +118,25 @@ export function OrganizationMembersTable({
     );
   };
 
-  const handleCancelInvitation = (invitationId: string | number) => {
-    console.log("Canceling invitation:", invitationId);
+  const handleCancelInvitation = (invitationId: string) => {
+    toast.promise(
+      cancelInvitationMutation.mutateAsync({
+        data: {
+          invitationId: String(invitationId),
+          orgId: organization.id,
+        },
+      }),
+      {
+        loading: "Cancelling invitation...",
+        success: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["organization-invitations", organization.id],
+          });
+          return "Invitation cancelled successfully!";
+        },
+        error: "Failed to cancel invitation",
+      },
+    );
   };
 
   return (
