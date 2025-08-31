@@ -49,7 +49,7 @@ model Project {
   description String?
   githubUrl String?
   organizationId Int
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   teamMembers User[]   @relation("ProjectUsers")
   ownerId     Int
   owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])

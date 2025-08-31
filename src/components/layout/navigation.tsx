@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "./theme-provider";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Settings, Moon, Sun } from "lucide-react";
 

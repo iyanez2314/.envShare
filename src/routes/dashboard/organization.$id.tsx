@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Building2, ArrowLeft } from "lucide-react";
-import { ProjectForm } from "@/components/project-form";
-import { ProjectCard } from "@/components/project-card";
+import { ProjectCard } from "@/components/project/project-card";
 import type {
   Project,
   Organization,

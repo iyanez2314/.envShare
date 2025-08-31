@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { GitBranch } from "lucide-react";
-import ThemeToggle from "@/components/theme-toggle";
+import ThemeToggle from "@/components/layout/theme-toggle";
 import { validateIncomingRequestFn } from "@/server-functions";
 import { Suspense } from "react";
-import { LoadingAnimation } from "@/components/loading-animation";
+import { LoadingAnimation } from "@/components/shared/loading-animation";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayoutComponent,

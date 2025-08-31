@@ -8,8 +8,7 @@ export * from "./user-organizations";
 
 export const createOrganizationFn = createServerFn({ method: "POST" })
   .validator(
-    (data: { name: string; description?: string; teamMembers?: User[] }) =>
-      data,
+    (data: { name: string; description?: string }) => data,
   )
   .handler(async ({ data }) => {
     try {
@@ -57,8 +56,11 @@ export const createOrganizationFn = createServerFn({ method: "POST" })
 
 export const updateOrganizationFn = createServerFn({ method: "POST" })
   .validator(
-    (data: { orgId: string | number; name?: string; description?: string }) =>
-      data,
+    (data: {
+      orgId: string | number;
+      name?: string;
+      description?: string;
+    }) => data,
   )
   .handler(async ({ data }) => {
     try {

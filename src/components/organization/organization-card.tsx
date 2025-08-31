@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { OrganizationMembersTable } from "@/components/organization-member-table";
+import { OrganizationMembersTable } from "./organization-member-table";
 import {
   Drawer,
   DrawerContent,
@@ -67,11 +67,14 @@ export function OrganizationCard({
     organization.userRoles?.find((ur) => ur.userId === currentUserId)?.role ||
     (isOwner ? "OWNER" : null);
 
-  // Handle card click to navigate to organization details
-
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't trigger card click if clicking on dropdown menu
-    if ((e.target as HTMLElement).closest("[data-dropdown-trigger]")) {
+    // Don't trigger card click if clicking on dropdown menu or its content
+    if (
+      (e.target as HTMLElement).closest("[data-dropdown-trigger]") ||
+      (e.target as HTMLElement).closest("[data-slot='dropdown-menu-content']") ||
+      (e.target as HTMLElement).closest("button") ||
+      e.defaultPrevented
+    ) {
       return;
     }
     navigate({
@@ -110,6 +113,7 @@ export function OrganizationCard({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation(); // prevent event bubbling to card click
+                      console.log("Edit organization", organization);
                       onEdit(organization);
                     }}
                   >
