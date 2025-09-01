@@ -2,9 +2,11 @@
 
 ## 🎯 Current Sprint
 
+- [ ] ** ENV Variable Adding** - This is a huge part of the application being worth anything so I need to figure a few things like: sperating the env the user is in (ie dev, staging, prod), how to handle bulk adding, and alot more. This is going to be a big one.
+
 - [ ] **Fix Type Errors** - Resolve remaining TypeScript issues in components (this is going to be ongoing so I will solve as they come up)
-- [ ] **User Invitations** - Implement invite user feature with email notifications
-- [ ] **Add Middleware To Each ServerFn** - I need to look into this more I am not sure how to exactly do this but I know this is a thing and is best practice
+- [ ] **User Invitations** - Implement invite user feature with email notifications (still need to add the email sending part but it's not really a huge priority right now)
+- [ ] **Add Middleware To Each ServerFn** - I need to look into this more I am not sure how to exactly do this but I know this is a thing and is best practice ( added auth middleware will look into added it as a global thing later still fighting a small bug when I do it but will come back to it later. The current implementation works fine for now.)
 
 ## ✅ Recently Completed
 
