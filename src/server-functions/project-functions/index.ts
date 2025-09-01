@@ -1,17 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
-import { validateIncomingRequestFn } from "../index";
+import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
 import { checkOrganizationRole } from "@/lib/role-utils";
 
 export const getOrganizationProjectsFn = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
   .validator((data: { organizationId: string | number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const orgIdNum =
         typeof data.organizationId === "string"
@@ -78,6 +75,7 @@ export const getOrganizationProjectsFn = createServerFn({ method: "GET" })
   });
 
 export const createOrganizationProjectFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     (data: {
       organizationId: number;
@@ -86,13 +84,9 @@ export const createOrganizationProjectFn = createServerFn({ method: "POST" })
       githubUrl: string | null;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       // Check if user has access to this organization
       const roleCheck = await checkOrganizationRole(
@@ -145,6 +139,7 @@ export const createOrganizationProjectFn = createServerFn({ method: "POST" })
   });
 
 export const updateOrganizationProjectFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     (data: {
       projectId: number;
@@ -153,13 +148,9 @@ export const updateOrganizationProjectFn = createServerFn({ method: "POST" })
       githubUrl: string | null;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       // First check if the project exists and user has access
       const existingProject = await prismaClient.project.findUnique({
@@ -222,14 +213,11 @@ export const updateOrganizationProjectFn = createServerFn({ method: "POST" })
   });
 
 export const deleteOrganizationProjectFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator((data: { projectId: number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       // First check if the project exists and user has access
       const existingProject = await prismaClient.project.findUnique({
