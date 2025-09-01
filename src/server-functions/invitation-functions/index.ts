@@ -1,18 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
-import { validateIncomingRequestFn } from "../index";
+import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
 import { requireOrganizationOwner } from "@/lib/role-utils";
 import { OrganizationRole } from "@prisma/client";
 
 export const getOrganizationInvitationsFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator((data: { orgId: string | number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
       const orgId =
@@ -56,6 +53,7 @@ export const getOrganizationInvitationsFn = createServerFn({ method: "POST" })
 export const updateInvitedUserRoleChangeFn = createServerFn({
   method: "POST",
 })
+  .middleware([authMiddleware])
   .validator(
     (data: {
       invitationId: string;
@@ -63,13 +61,9 @@ export const updateInvitedUserRoleChangeFn = createServerFn({
       orgId: string | number;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
       const invitationId = data.invitationId;
@@ -101,14 +95,11 @@ export const updateInvitedUserRoleChangeFn = createServerFn({
   });
 
 export const cancelOrganizationInvitationFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator((data: { invitationId: string; orgId: number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
       const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
       const invitationId = data.invitationId;
       const orgId =

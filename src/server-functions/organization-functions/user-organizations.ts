@@ -1,15 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { validateIncomingRequestFn } from "../index";
+import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
 
-export const getUserOrganizationsFn = createServerFn({ method: "GET" }).handler(
-  async () => {
+export const getUserOrganizationsFn = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const userWithOrganizations = await prismaClient.user.findUnique({
         where: { id: user.id },

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { validateIncomingRequestFn } from "../index";
+import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
 import { requireOrganizationOwner } from "@/lib/role-utils";
 import { User } from "@/interfaces";
@@ -8,16 +8,13 @@ import { OrganizationRole } from "@prisma/client";
 export * from "./user-organizations";
 
 export const createOrganizationFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     (data: { name: string; description?: string }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const newOrg = await prismaClient.organization.create({
         data: {
@@ -56,6 +53,7 @@ export const createOrganizationFn = createServerFn({ method: "POST" })
   });
 
 export const updateOrganizationFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     (data: {
       orgId: string | number;
@@ -63,13 +61,9 @@ export const updateOrganizationFn = createServerFn({ method: "POST" })
       description?: string;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const orgIdNum =
         typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
@@ -105,14 +99,11 @@ export const updateOrganizationFn = createServerFn({ method: "POST" })
   });
 
 export const deleteOrganizationFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator((data: { orgId: string | number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const orgIdNum =
         typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
@@ -144,6 +135,7 @@ export const deleteOrganizationFn = createServerFn({ method: "POST" })
   });
 
 export const updateOrganizationMemberRoleFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     (data: {
       memberId: number;
@@ -151,13 +143,9 @@ export const updateOrganizationMemberRoleFn = createServerFn({ method: "POST" })
       orgId: string | number;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
       const orgId =
@@ -209,19 +197,16 @@ export const updateOrganizationMemberRoleFn = createServerFn({ method: "POST" })
   });
 
 export const removeOrganizationMemberFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
   .validator(
     (data: {
       memberId: number;
       orgId: string | number;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const { user, valid } = await validateIncomingRequestFn();
-
-      if (!user || !valid) {
-        throw new Error("Unauthorized");
-      }
+      const { user } = context as AuthContext;
 
       const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
       const orgId =
