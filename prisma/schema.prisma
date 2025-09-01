@@ -26,6 +26,7 @@ model User {
   ownedProjects Project[] @relation("ProjectOwner")
   organizationRoles UserOrganizationRole[]
   projectRoles UserProjectRole[]
+  sentInvitations OrganizationInvitation[] @relation("InvitationsSent")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -39,6 +40,7 @@ model Organization {
   users     User[]   @relation("OrganizationUsers")
   projects  Project[]
   userRoles UserOrganizationRole[]
+  invitations OrganizationInvitation[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -49,7 +51,7 @@ model Project {
   description String?
   githubUrl String?
   organizationId Int
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   teamMembers User[]   @relation("ProjectUsers")
   ownerId     Int
   owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
@@ -109,4 +111,28 @@ enum ProjectRole {
 enum OrganizationRole {
   OWNER
   MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+model OrganizationInvitation {
+  id             String           @id @default(cuid())
+  email          String
+  organizationId Int
+  role           OrganizationRole @default(MEMBER)
+  status         InvitationStatus @default(PENDING)
+  invitedBy      Int
+  createdAt      DateTime         @default(now())
+  expiresAt      DateTime?
+  
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User             @relation("InvitationsSent", fields: [invitedBy], references: [id])
+  
+  @@unique([email, organizationId])
 }

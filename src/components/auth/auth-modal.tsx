@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Github } from "lucide-react";
-import { LoginForm } from "@/components/login-form";
-import { SignupForm } from "@/components/signup-form";
+import { LoginForm } from "./login-form";
+import { SignupForm } from "./signup-form";
 import { toast } from "sonner";
 
 interface AuthModalProps {

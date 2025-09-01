@@ -27,7 +27,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { OrganizationTeamDialog } from "@/components/organization-team-dialog";
+import { OrganizationMembersTable } from "./organization-member-table";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import type { Organization } from "@/interfaces";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -61,11 +67,14 @@ export function OrganizationCard({
     organization.userRoles?.find((ur) => ur.userId === currentUserId)?.role ||
     (isOwner ? "OWNER" : null);
 
-  // Handle card click to navigate to organization details
-
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't trigger card click if clicking on dropdown menu
-    if ((e.target as HTMLElement).closest("[data-dropdown-trigger]")) {
+    // Don't trigger card click if clicking on dropdown menu or its content
+    if (
+      (e.target as HTMLElement).closest("[data-dropdown-trigger]") ||
+      (e.target as HTMLElement).closest("[data-slot='dropdown-menu-content']") ||
+      (e.target as HTMLElement).closest("button") ||
+      e.defaultPrevented
+    ) {
       return;
     }
     navigate({
@@ -104,6 +113,7 @@ export function OrganizationCard({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation(); // prevent event bubbling to card click
+                      console.log("Edit organization", organization);
                       onEdit(organization);
                     }}
                   >
@@ -175,13 +185,21 @@ export function OrganizationCard({
         </AlertDialogContent>
       </AlertDialog>
 
-      {showTeamDialog && (
-        <OrganizationTeamDialog
-          organization={organization}
-          onUpdate={onUpdate}
-          onClose={() => setShowTeamDialog(false)}
-        />
-      )}
+      <Drawer open={showTeamDialog} onOpenChange={setShowTeamDialog}>
+        <DrawerContent className="max-h-[95vh] h-[95vh]">
+          <DrawerHeader>
+            <DrawerTitle>Team Management - {organization.name}</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-y-auto flex-1">
+            <OrganizationMembersTable
+              organization={organization}
+              currentUserId={currentUserId}
+              onUpdate={onUpdate}
+              onClose={() => setShowTeamDialog(false)}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

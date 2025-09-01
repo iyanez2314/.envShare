@@ -18,12 +18,12 @@ import {
 } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { AuthModal } from "@/components/auth-modal";
-import { Navigation } from "@/components/navigation";
-import { HeroSection } from "@/components/hero-section";
-import { FeatureCard } from "@/components/feature-card";
-import { CTASection } from "@/components/cta-section";
-import { Footer } from "@/components/footer";
+import { AuthModal } from "@/components/auth/auth-modal";
+import { Navigation } from "@/components/layout/navigation";
+import { HeroSection } from "@/components/marketing/hero-section";
+import { FeatureCard } from "@/components/marketing/feature-card";
+import { CTASection } from "@/components/marketing/cta-section";
+import { Footer } from "@/components/marketing/footer";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,

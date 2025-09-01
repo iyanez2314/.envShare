@@ -20,11 +20,6 @@ export function LoadingAnimation() {
               <Zap className="h-8 w-8 text-yellow-500" />
             </div>
           </div>
-
-          {/* Pulsing ring */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-24 w-24 rounded-full border-2 border-primary/20 animate-pulse"></div>
-          </div>
         </div>
 
         {/* Loading Text */}

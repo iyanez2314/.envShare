@@ -2,9 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
-import { OrganizationForm } from "@/components/organization-form";
-import { OrganizationCard } from "@/components/organization-card";
-import type { Organization, TeamMember } from "@/interfaces";
+import { OrganizationForm, OrganizationCard } from "@/components/organization";
+import type { Organization } from "@/interfaces";
 import {
   createOrganizationFn,
   deleteOrganizationFn,
@@ -35,7 +34,7 @@ function RouteComponent() {
     queryFn: getUserOrganizationsFn,
   });
 
-  const organizations = organizationResponse?.data || [];
+  const organizations = organizationResponse?.data || ([] as Organization[]);
 
   const createOrganizationMutation = useMutation({
     mutationFn: createOrganizationFn,
@@ -67,19 +66,26 @@ function RouteComponent() {
     });
   };
 
-  const handleUpdateOrganization = (org: Organization) => {
+  const handleUpdateOrganization = (
+    orgId: number,
+    data: {
+      name: string;
+      description?: string;
+    }
+  ) => {
     setShowOrganizationForm(false);
     toast.promise(
       updateOrganizationMutation.mutateAsync({
         data: {
-          orgId: org.id,
-          name: org.name,
-          description: org.description,
+          orgId,
+          name: data.name,
+          description: data.description,
         },
       }),
       {
         loading: "Updating organization...",
         success: () => {
+          setSelectedOrgForEdit(null);
           queryClient.invalidateQueries({ queryKey: ["organizations"] });
           return "Organization updated successfully!";
         },
@@ -91,7 +97,6 @@ function RouteComponent() {
   const addOrganization = (data: {
     name: string;
     description?: string;
-    teamMembers?: User[];
   }) => {
     setShowOrganizationForm(false);
     toast.promise(
@@ -99,7 +104,6 @@ function RouteComponent() {
         data: {
           name: data.name,
           description: data.description,
-          teamMembers: data.teamMembers || [],
         },
       }),
       {
@@ -177,14 +181,8 @@ function RouteComponent() {
       {selectedOrgForEdit && (
         <OrganizationForm
           organization={selectedOrgForEdit}
-          onSubmit={(data, teamMembers) => {
-            updateOrganizationMutation.mutate({
-              data: {
-                orgId: selectedOrgForEdit.id,
-                name: data.name,
-                description: data.description,
-              },
-            });
+          onSubmit={(data) => {
+            handleUpdateOrganization(selectedOrgForEdit.id, data);
           }}
           onClose={() => setSelectedOrgForEdit(null)}
         />

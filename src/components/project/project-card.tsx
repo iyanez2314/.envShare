@@ -83,23 +83,23 @@ export function ProjectCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="size-4 bg:text-primary-foreground" />
+                  <MoreVertical className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {canEdit && (
                   <DropdownMenuItem onClick={() => onEdit(project)}>
-                    <Edit className="size-4 mr-2 bg:text-primary-foreground" />
+                    <Edit className="size-4 mr-2" />
                     Edit Project
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => setShowEnvVars(true)}>
-                  <Key className="size-4 mr-2 bg:text-primary-foreground" />
+                  <Key className="size-4 mr-2" />
                   Environment Variables
                 </DropdownMenuItem>
                 {canManageTeam && (
                   <DropdownMenuItem onClick={() => setShowTeamMembers(true)}>
-                    <Users className="simr-2 bg:text-primary-foreground" />
+                    <Users className="size-4 mr-2" />
                     Manage Team
                   </DropdownMenuItem>
                 )}
