@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MemberRow } from "./member-row";
+import { OrganizationRole } from "@prisma/client";
 
 interface Member {
   id: number;
@@ -20,7 +21,7 @@ interface Member {
 interface MembersTableProps {
   members: Member[];
   currentUserId: number | null;
-  onRoleChange: (memberId: number) => void;
+  onRoleChange: (memberId: number, newRole: OrganizationRole) => void;
   onRemoveMember: (memberId: number) => void;
 }
 

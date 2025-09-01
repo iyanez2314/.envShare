@@ -3,6 +3,15 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { MemberAvatar } from "./member-avatar";
 import { RoleBadge } from "./role-badge";
 import { MemberActionsMenu } from "./member-actions-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState } from "react";
+import { OrganizationRole } from "@prisma/client";
 
 interface Member {
   id: number;
@@ -16,7 +25,7 @@ interface Member {
 interface MemberRowProps {
   member: Member;
   currentUserId: number | null;
-  onRoleChange?: (memberId: number) => void;
+  onRoleChange?: (memberId: number, newRole: OrganizationRole) => void;
   onRemove?: (memberId: number) => void;
 }
 
@@ -39,6 +48,13 @@ export function MemberRow({
   onRoleChange,
   onRemove,
 }: MemberRowProps) {
+  const [editingRole, setEditingRole] = useState(false);
+
+  const handleRoleChange = (newRole: OrganizationRole) => {
+    onRoleChange?.(member.id, newRole);
+    setEditingRole(false);
+  };
+
   return (
     <TableRow key={member.id}>
       <TableCell>
@@ -53,7 +69,22 @@ export function MemberRow({
         </div>
       </TableCell>
       <TableCell>
-        <RoleBadge role={member.role} />
+        {editingRole ? (
+          <Select 
+            value={member.role} 
+            onValueChange={handleRoleChange}
+          >
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MEMBER">Member</SelectItem>
+              <SelectItem value="OWNER">Owner</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <RoleBadge role={member.role} />
+        )}
       </TableCell>
       <TableCell>
         <Badge variant={getStatusBadgeVariant(member.status)}>
@@ -67,7 +98,7 @@ export function MemberRow({
         <MemberActionsMenu
           member={member}
           currentUserId={currentUserId}
-          onRoleChange={onRoleChange}
+          onRoleChange={() => setEditingRole(true)}
           onRemove={onRemove}
         />
       </TableCell>

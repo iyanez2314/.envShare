@@ -3,6 +3,7 @@ import { validateIncomingRequestFn } from "../index";
 import { prismaClient } from "@/services/prisma";
 import { requireOrganizationOwner } from "@/lib/role-utils";
 import { User } from "@/interfaces";
+import { OrganizationRole } from "@prisma/client";
 
 export * from "./user-organizations";
 
@@ -138,6 +139,133 @@ export const deleteOrganizationFn = createServerFn({ method: "POST" })
       };
     } catch (error) {
       console.error("Error deleting organization:", error);
+      throw new Error("Internal Server Error");
+    }
+  });
+
+export const updateOrganizationMemberRoleFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      memberId: number;
+      newRole: OrganizationRole;
+      orgId: string | number;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { user, valid } = await validateIncomingRequestFn();
+
+      if (!user || !valid) {
+        throw new Error("Unauthorized");
+      }
+
+      const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
+      const orgId =
+        typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
+
+      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+
+      if (!hasAccess) {
+        throw new Error("Forbidden: OWNER role required");
+      }
+
+      // Check if the member being updated is not the organization owner
+      const organization = await prismaClient.organization.findUnique({
+        where: { id: orgId },
+        select: { ownerId: true },
+      });
+
+      if (organization?.ownerId === data.memberId) {
+        throw new Error("Cannot change the role of the organization owner");
+      }
+
+      // Update the user's organization role
+      const updatedRole = await prismaClient.userOrganizationRole.update({
+        where: {
+          userId_organizationId: {
+            userId: data.memberId,
+            organizationId: orgId,
+          },
+        },
+        data: {
+          role: data.newRole,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return { success: true, data: updatedRole };
+    } catch (error) {
+      console.error("Error updating organization member role:", error);
+      throw new Error("Internal Server Error");
+    }
+  });
+
+export const removeOrganizationMemberFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      memberId: number;
+      orgId: string | number;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { user, valid } = await validateIncomingRequestFn();
+
+      if (!user || !valid) {
+        throw new Error("Unauthorized");
+      }
+
+      const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
+      const orgId =
+        typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
+
+      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+
+      if (!hasAccess) {
+        throw new Error("Forbidden: OWNER role required");
+      }
+
+      // Check if the member being removed is not the organization owner
+      const organization = await prismaClient.organization.findUnique({
+        where: { id: orgId },
+        select: { ownerId: true },
+      });
+
+      if (organization?.ownerId === data.memberId) {
+        throw new Error("Cannot remove the organization owner");
+      }
+
+      // Remove the user's organization role
+      await prismaClient.userOrganizationRole.delete({
+        where: {
+          userId_organizationId: {
+            userId: data.memberId,
+            organizationId: orgId,
+          },
+        },
+      });
+
+      // Remove the user from the organization
+      await prismaClient.organization.update({
+        where: { id: orgId },
+        data: {
+          users: {
+            disconnect: { id: data.memberId },
+          },
+        },
+      });
+
+      return { success: true, message: "Member removed successfully" };
+    } catch (error) {
+      console.error("Error removing organization member:", error);
       throw new Error("Internal Server Error");
     }
   });

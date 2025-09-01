@@ -19,7 +19,7 @@ interface Member {
 interface MemberActionsMenuProps {
   member: Member;
   currentUserId: number | null;
-  onRoleChange?: (memberId: number) => void;
+  onRoleChange?: () => void;
   onRemove?: (memberId: number) => void;
 }
 
@@ -45,7 +45,7 @@ export function MemberActionsMenu({
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuItem 
           disabled={!canModify}
-          onClick={() => canModify && onRoleChange?.(member.id)}
+          onClick={() => canModify && onRoleChange?.()}
         >
           Change role
         </DropdownMenuItem>

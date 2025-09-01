@@ -7,3 +7,4 @@ export { InvitationRow } from './invitation-row';
 export { MemberActionsMenu } from './member-actions-menu';
 export { MemberAvatar } from './member-avatar';
 export { RoleBadge } from './role-badge';
+export { RemoveMemberDialog } from './remove-member-dialog';

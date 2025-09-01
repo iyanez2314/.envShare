@@ -6,6 +6,7 @@ import {
   TeamManagementTabs,
   MembersTable,
   InvitationsTable,
+  RemoveMemberDialog,
 } from "./team-management";
 import {
   useSuspenseQuery,
@@ -17,6 +18,10 @@ import {
   updateInvitedUserRoleChangeFn,
   cancelOrganizationInvitationFn,
 } from "@/server-functions/invitation-functions";
+import { 
+  updateOrganizationMemberRoleFn,
+  removeOrganizationMemberFn 
+} from "@/server-functions/organization-functions";
 import { toast } from "sonner";
 import { OrganizationRole } from "@prisma/client";
 
@@ -35,6 +40,7 @@ export function OrganizationMembersTable({
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("members");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<any>(null);
 
   const { data: invitationsResponse } = useSuspenseQuery({
     queryKey: ["organization-invitations", organization.id],
@@ -50,6 +56,14 @@ export function OrganizationMembersTable({
     mutationFn: cancelOrganizationInvitationFn,
   });
 
+  const updateMemberRoleMutation = useMutation({
+    mutationFn: updateOrganizationMemberRoleFn,
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: removeOrganizationMemberFn,
+  });
+
   const invitations = invitationsResponse?.data || [];
 
   // Get organization members with their roles
@@ -59,7 +73,6 @@ export function OrganizationMembersTable({
         (ur) => ur.userId === user.id,
       );
       const isOwner = organization.ownerId === user.id;
-
       return {
         id: user.id,
         name: user.name || "No Name",
@@ -81,12 +94,55 @@ export function OrganizationMembersTable({
     setShowInviteModal(false);
   };
 
-  const handleRoleChange = (memberId: number) => {
-    console.log("Changing role for member:", memberId);
+  const handleRoleChange = (memberId: number, newRole: OrganizationRole) => {
+    toast.promise(
+      updateMemberRoleMutation.mutateAsync({
+        data: {
+          memberId,
+          newRole,
+          orgId: organization.id,
+        },
+      }),
+      {
+        loading: "Updating member role...",
+        success: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["organizations"],
+          });
+          return "Member role updated successfully!";
+        },
+        error: "Failed to update member role",
+      },
+    );
   };
 
   const handleRemoveMember = (memberId: number) => {
-    console.log("Removing member:", memberId);
+    const member = members.find(m => m.id === memberId);
+    if (member) {
+      setMemberToRemove(member);
+    }
+  };
+
+  const confirmRemoveMember = (memberId: number) => {
+    toast.promise(
+      removeMemberMutation.mutateAsync({
+        data: {
+          memberId,
+          orgId: organization.id,
+        },
+      }),
+      {
+        loading: "Removing member...",
+        success: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["organizations"],
+          });
+          setMemberToRemove(null);
+          return "Member removed successfully!";
+        },
+        error: "Failed to remove member",
+      },
+    );
   };
 
   const handleResendInvitation = (invitationId: string | number) => {
@@ -175,6 +231,14 @@ export function OrganizationMembersTable({
         onClose={() => setShowInviteModal(false)}
         organizationName={organization.name}
         onInvite={handleInviteUser}
+      />
+
+      <RemoveMemberDialog
+        open={!!memberToRemove}
+        onClose={() => setMemberToRemove(null)}
+        member={memberToRemove}
+        onConfirm={confirmRemoveMember}
+        isLoading={removeMemberMutation.status === "pending"}
       />
     </div>
   );
