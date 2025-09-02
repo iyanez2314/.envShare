@@ -4,18 +4,46 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "./theme-provider";
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, Settings, Moon, Sun } from "lucide-react";
+import { Link, useRouter } from "@tanstack/react-router";
+import { ArrowRight, Settings, Moon, Sun, User, LogOut } from "lucide-react";
+import { logoutFn } from "@/server-functions/auth-functions";
+import { toast } from "sonner";
 
 interface NavigationProps {
   onGetStarted?: () => void;
   showGetStarted?: boolean;
+  isAuthenticated?: boolean;
+  currentUser?: {
+    name?: string;
+    email: string;
+  } | null;
 }
 
-export function Navigation({ onGetStarted, showGetStarted = true }: NavigationProps) {
+export function Navigation({ 
+  onGetStarted, 
+  showGetStarted = true, 
+  isAuthenticated = false,
+  currentUser = null 
+}: NavigationProps) {
   const { setTheme } = useTheme();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const result = await logoutFn();
+      if (result.success) {
+        toast.success("Logged out successfully");
+        router.navigate({ to: "/" });
+      } else {
+        toast.error("Logout failed");
+      }
+    } catch (error) {
+      toast.error("Logout failed");
+    }
+  };
 
   return (
     <nav className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -30,28 +58,32 @@ export function Navigation({ onGetStarted, showGetStarted = true }: NavigationPr
             </span>
           </div>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link
-              to="/"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link
-              to="/"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </Link>
-          </div>
+          {/* Marketing Links - Show only when not authenticated */}
+          {!isAuthenticated && (
+            <div className="hidden md:flex items-center space-x-8">
+              <Link
+                to="/"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Features
+              </Link>
+              <Link
+                to="/"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
+                to="/"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                About
+              </Link>
+            </div>
+          )}
 
           <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -72,7 +104,37 @@ export function Navigation({ onGetStarted, showGetStarted = true }: NavigationPr
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {showGetStarted && (
+
+            {/* User Menu - Show only when authenticated */}
+            {isAuthenticated && currentUser && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <User className="h-[1.2rem] w-[1.2rem]" />
+                    <span className="sr-only">User menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium">{currentUser.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Get Started Button - Show when not authenticated */}
+            {showGetStarted && !isAuthenticated && (
               <Button onClick={onGetStarted}>
                 Get Started <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
