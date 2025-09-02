@@ -4,6 +4,44 @@ import { prismaClient } from "@/services/prisma";
 import { checkOrganizationRole } from "@/lib/role-utils";
 import type { ProjectRole } from "@/interfaces";
 
+async function validateProjectAccess(userId: number, projectId: number) {
+  const project = await prismaClient.project.findUnique({
+    where: { id: projectId },
+    select: { organizationId: true, ownerId: true },
+  });
+
+  if (!project) {
+    return {
+      success: false,
+      message: "Project not found",
+      project: null,
+    };
+  }
+
+  // Check if user is project owner OR organization owner
+  const isProjectOwner = project.ownerId === userId;
+  const userHasOrgAccess = await checkOrganizationRole(
+    userId,
+    project.organizationId,
+    "OWNER",
+  );
+
+  if (!isProjectOwner && !userHasOrgAccess.hasAccess) {
+    return {
+      success: false,
+      message:
+        "Forbidden - Only project owner or organization owner can manage members",
+      project: null,
+    };
+  }
+
+  return {
+    success: true,
+    message: "",
+    project,
+  };
+}
+
 // Get current project team members with their roles
 export const getProjectTeamFn = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
@@ -175,34 +213,15 @@ export const addProjectMemberFn = createServerFn({ method: "POST" })
         };
       }
 
-      // 1. Verify user has OWNER role on project
-      const project = await prismaClient.project.findUnique({
-        where: { id: projectId },
-        select: { organizationId: true, ownerId: true },
-      });
-
-      if (!project) {
+      // 1. Verify user has access to manage project
+      const accessCheck = await validateProjectAccess(user.id, projectId);
+      if (!accessCheck.success) {
         return {
           success: false,
-          message: "Project not found",
+          message: accessCheck.message,
         };
       }
-
-      // Check if user is project owner OR organization owner
-      const isProjectOwner = project.ownerId === user.id;
-      const userHasOrgAccess = await checkOrganizationRole(
-        user.id,
-        project.organizationId,
-        "OWNER",
-      );
-
-      if (!isProjectOwner && !userHasOrgAccess.hasAccess) {
-        return {
-          success: false,
-          message:
-            "Forbidden - Only project owner or organization owner can add members",
-        };
-      }
+      const project = accessCheck.project!;
       // 2. Verify target user is in the same organization
       const targetUserOrgRole =
         await prismaClient.userOrganizationRole.findFirst({
@@ -290,35 +309,15 @@ export const updateProjectMemberRoleFn = createServerFn({ method: "POST" })
       const { user } = context as AuthContext;
       const { projectId, userId, newRole } = data;
 
-      // TODO: Implement logic to:
-      // 1. Verify user has OWNER role on project
-      const project = await prismaClient.project.findUnique({
-        where: { id: projectId },
-        select: { organizationId: true, ownerId: true },
-      });
-
-      if (!project) {
+      // 1. Verify user has access to manage project
+      const accessCheck = await validateProjectAccess(user.id, projectId);
+      if (!accessCheck.success) {
         return {
           success: false,
-          message: "Project not found",
+          message: accessCheck.message,
         };
       }
-
-      // Check if user is project owner OR organization owner
-      const isProjectOwner = project.ownerId === user.id;
-      const userHasOrgAccess = await checkOrganizationRole(
-        user.id,
-        project.organizationId,
-        "OWNER",
-      );
-
-      if (!isProjectOwner && !userHasOrgAccess.hasAccess) {
-        return {
-          success: false,
-          message:
-            "Forbidden - Only project owner or organization owner can add members",
-        };
-      }
+      const project = accessCheck.project!;
 
       // 2. Verify target user is on the project
       const targetUserProjectRole =
@@ -378,17 +377,65 @@ export const removeProjectMemberFn = createServerFn({ method: "POST" })
     try {
       const { user } = context as AuthContext;
 
-      // TODO: Implement logic to:
-      // 1. Verify user has OWNER role on project
-      // 2. Verify target user is on the project
-      // 3. Prevent removing project owner
-      // 4. Delete UserProjectRole entry
-      // 5. Remove user from project.teamMembers
-      // 6. Return updated team data
+      const { projectId, userId } = data;
 
+      // 1. Verify user has access to manage project
+      const accessCheck = await validateProjectAccess(user.id, projectId);
+      if (!accessCheck.success) {
+        return {
+          success: false,
+          message: accessCheck.message,
+        };
+      }
+      const project = accessCheck.project!;
+
+      // 2. Verify target user is on the project
+      const targetUserProjectRole =
+        await prismaClient.userProjectRole.findFirst({
+          where: {
+            userId: userId,
+            projectId: projectId,
+          },
+        });
+
+      if (!targetUserProjectRole) {
+        return {
+          success: false,
+          message: "User is not a member of the project",
+        };
+      }
+
+      // 3. Prevent removing project owner
+      if (project.ownerId === userId) {
+        return {
+          success: false,
+          message: "Cannot remove project owner",
+        };
+      }
+      // 4. Delete UserProjectRole entry
+      const removeUserProjectRole = await prismaClient.userProjectRole.delete({
+        where: {
+          id: targetUserProjectRole.id,
+        },
+      });
+
+      // 5. Remove user from project.teamMembers
+      const updatedProject = await prismaClient.project.update({
+        where: { id: projectId },
+        data: {
+          teamMembers: {
+            disconnect: { id: userId },
+          },
+        },
+      });
+
+      // 6. Return updated team data
       return {
         success: true,
-        data: {}, // Updated project team data
+        data: {
+          userId: userId,
+          removedAt: new Date(),
+        },
         message: "Member removed from project successfully",
       };
     } catch (error) {
