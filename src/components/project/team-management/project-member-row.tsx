@@ -81,8 +81,8 @@ export function ProjectMemberRow({
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-xs">
-              {member.name?.substring(0, 2)?.toUpperCase() || 
-               member.email.substring(0, 2)?.toUpperCase()}
+              {member.name?.substring(0, 2)?.toUpperCase() ||
+                member.email.substring(0, 2)?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
@@ -94,18 +94,13 @@ export function ProjectMemberRow({
                 </Badge>
               )}
             </div>
-            <div className="text-sm text-muted-foreground">
-              {member.email}
-            </div>
+            <div className="text-sm text-muted-foreground">{member.email}</div>
           </div>
         </div>
       </TableCell>
       <TableCell>
         {editingRole && canEdit && !isProjectOwner ? (
-          <Select
-            value={member.role}
-            onValueChange={handleRoleChange}
-          >
+          <Select value={member.role} onValueChange={handleRoleChange}>
             <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>
@@ -136,7 +131,7 @@ export function ProjectMemberRow({
       </TableCell>
       <TableCell>
         <div className="text-sm text-muted-foreground">
-          {member.addedAt.toLocaleDateString()}
+          {member?.addedAt?.toLocaleDateString() || "N/A"}
         </div>
       </TableCell>
       <TableCell>
@@ -154,7 +149,7 @@ export function ProjectMemberRow({
                 </DropdownMenuItem>
               )}
               {!isProjectOwner && (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => onRemove(member)}
                   className="text-destructive"
                 >
@@ -168,3 +163,4 @@ export function ProjectMemberRow({
     </TableRow>
   );
 }
+

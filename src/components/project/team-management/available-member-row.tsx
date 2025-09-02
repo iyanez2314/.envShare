@@ -17,16 +17,17 @@ interface AvailableMemberRowProps {
   onAdd: (member: AvailableMember) => void;
 }
 
-export function AvailableMemberRow({
-  member,
-  onAdd,
-}: AvailableMemberRowProps) {
+export function AvailableMemberRow({ member, onAdd }: AvailableMemberRowProps) {
   const getOrgRoleIcon = (role: "OWNER" | "MEMBER") => {
-    return role === "OWNER" ? <Crown className="h-3 w-3" /> : <Users className="h-3 w-3" />;
+    return role === "OWNER" ? (
+      <Crown className="h-3 w-3" />
+    ) : (
+      <Users className="h-3 w-3" />
+    );
   };
 
   const getOrgRoleColor = (role: "OWNER" | "MEMBER") => {
-    return role === "OWNER" 
+    return role === "OWNER"
       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
       : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
   };
@@ -37,17 +38,13 @@ export function AvailableMemberRow({
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-xs">
-              {member.name?.substring(0, 2)?.toUpperCase() || 
-               member.email.substring(0, 2)?.toUpperCase()}
+              {member.name?.substring(0, 2)?.toUpperCase() ||
+                member.email.substring(0, 2)?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-medium">
-              {member.name || "No Name"}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {member.email}
-            </div>
+            <div className="font-medium">{member.name || "No Name"}</div>
+            <div className="text-sm text-muted-foreground">{member.email}</div>
           </div>
         </div>
       </TableCell>
@@ -62,7 +59,7 @@ export function AvailableMemberRow({
       </TableCell>
       <TableCell>
         <div className="text-sm text-muted-foreground">
-          {member.joinedAt.toLocaleDateString()}
+          {member?.joinedAt?.toLocaleDateString() || "N/A"}
         </div>
       </TableCell>
       <TableCell>
@@ -78,3 +75,4 @@ export function AvailableMemberRow({
     </TableRow>
   );
 }
+

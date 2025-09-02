@@ -7,7 +7,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Users } from "lucide-react";
 import type { Project } from "@/interfaces";
 import {
   ProjectTeamTabs,
@@ -57,7 +56,8 @@ export function ProjectTeamDialog({
   // Fetch available organization members (not on project)
   const { data: availableMembersResponse } = useSuspenseQuery({
     queryKey: ["available-org-members", project.id],
-    queryFn: () => getAvailableOrgMembersFn({ data: { projectId: project.id } }),
+    queryFn: () =>
+      getAvailableOrgMembersFn({ data: { projectId: project.id } }),
   });
 
   // Mutations
@@ -74,7 +74,8 @@ export function ProjectTeamDialog({
   });
 
   const currentTeam = projectTeamResponse?.data?.currentTeam || [];
-  const availableMembers = availableMembersResponse?.data?.availableMembers || [];
+  const availableMembers =
+    availableMembersResponse?.data?.availableMembers || [];
 
   const handleAddMember = (member: any, role: ProjectRole) => {
     toast.promise(
@@ -176,7 +177,11 @@ export function ProjectTeamDialog({
             <DrawerTitle>Team Management - {project.name}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-y-auto flex-1">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full h-full flex flex-col"
+            >
               <ProjectTeamTabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -224,3 +229,4 @@ export function ProjectTeamDialog({
     </>
   );
 }
+
