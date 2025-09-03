@@ -91,3 +91,12 @@ export const cookieConfig = {
   expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
   path: "/",
 };
+
+// Cookie configuration for clearing/expiring cookies
+export const clearCookieConfig = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  expires: new Date(0), // Set to past date to clear cookie
+  path: "/",
+};

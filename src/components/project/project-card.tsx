@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import type { Project } from "@/interfaces";
 import { EnvVarsDialog } from "./env-vars-dialog";
-import { TeamMembersDialog } from "./team-member-dialog";
+import { ProjectTeamDialog } from "./team-management";
 import { TeamMemberAvatar } from "./team-member-icons";
 
 interface ProjectCardProps {
@@ -165,9 +165,9 @@ export function ProjectCard({
       )}
 
       {showTeamMembers && (
-        <TeamMembersDialog
+        <ProjectTeamDialog
           project={project}
-          onUpdate={onUpdate}
+          currentUserId={currentUserId || null}
           onClose={() => setShowTeamMembers(false)}
         />
       )}

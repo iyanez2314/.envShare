@@ -1,6 +1,9 @@
 import { useState, useCallback } from "react";
+import type { EnvironmentVariable } from "@/interfaces";
+import { encryptValue, decryptValue, isEncryptedValue, safeDecrypt } from "@/lib/crypto-utils";
+import { parseEnvText, convertToEnvironmentVariables, type ParseResult } from "@/lib/env-parser";
 
-interface EnvironmentVariable {
+interface SecureEnvironmentVariable {
   key: string;
   plainText: string;
   encryptedValue: string | null;
@@ -10,8 +13,10 @@ interface EnvironmentVariable {
 
 export function useEnvironmentSecurity() {
   const [secureVars, setSecureVars] = useState<
-    Record<string, EnvironmentVariable>
+    Record<string, SecureEnvironmentVariable>
   >({});
+  
+  // Hook for managing environment variables with encryption support
 
   // Check if a key name suggests sensitive content
   const isSensitiveKey = useCallback((key: string): boolean => {
@@ -41,22 +46,13 @@ export function useEnvironmentSecurity() {
       let encryptedValue: string | null = null;
       let plainText = value;
 
-      // If it's already encrypted (starts with enc:), handle appropriately
-      if (value.startsWith("enc:")) {
-        // This is already encrypted data being loaded
+      // If it's already encrypted, decrypt it first to get plain text
+      if (isEncryptedValue(value)) {
         encryptedValue = value;
-        // In a real app, you'd decrypt here to get plainText
-        // For demo, we'll indicate it's encrypted but can't show plain text
-        plainText = "[ENCRYPTED - Cannot decrypt in demo]";
+        plainText = await safeDecrypt(value);
       } else if (isSensitive) {
         // Encrypt sensitive values while keeping plain text
-        const buffer = new TextEncoder().encode(value);
-        const hash = await crypto.subtle.digest("SHA-256", buffer);
-        const hashArray = Array.from(new Uint8Array(hash));
-        const hashHex = hashArray
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        encryptedValue = `enc:${hashHex}`;
+        encryptedValue = await encryptValue(value);
         plainText = value; // Store original plain text
       }
 
@@ -134,18 +130,16 @@ export function useEnvironmentSecurity() {
     [secureVars],
   );
 
-  // Get all variables as a plain object (for saving) - automatically chooses correct version
-  const getAllVariables = useCallback((): Record<string, string> => {
-    const result: Record<string, string> = {};
-    Object.entries(secureVars).forEach(([key, envVar]) => {
-      // For sensitive variables, save encrypted version; for others, save plain text
-      if (envVar.isSensitive && envVar.encryptedValue) {
-        result[key] = envVar.encryptedValue;
-      } else {
-        result[key] = envVar.plainText;
-      }
-    });
-    return result;
+  // Get all variables as EnvironmentVariable array (for saving to Project interface)
+  const getAllVariables = useCallback((): EnvironmentVariable[] => {
+    return Object.entries(secureVars).map(([key, envVar], index) => ({
+      id: index + 1, // Temporary ID for new variables
+      key,
+      value: envVar.isSensitive && envVar.encryptedValue ? envVar.encryptedValue : envVar.plainText,
+      projectId: 0, // Will be set when saving to server
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
   }, [secureVars]);
 
   // Get all variables with encryption info
@@ -153,30 +147,26 @@ export function useEnvironmentSecurity() {
     return secureVars;
   }, [secureVars]);
 
-  // Load variables from a plain object
+  // Load variables from EnvironmentVariable array
   const loadVariables = useCallback(
-    async (vars: Record<string, string>) => {
-      const newSecureVars: Record<string, EnvironmentVariable> = {};
+    async (vars: EnvironmentVariable[]) => {
+      const newSecureVars: Record<string, SecureEnvironmentVariable> = {};
 
-      for (const [key, value] of Object.entries(vars)) {
+      for (const envVar of vars) {
+        const { key, value } = envVar;
         const isSensitive = isSensitiveKey(key);
-        const isEncrypted = value.startsWith("enc:");
+        const isEncrypted = isEncryptedValue(value);
 
         let plainText = value;
         let encryptedValue: string | null = null;
 
         if (isEncrypted) {
           encryptedValue = value;
-          plainText = "[ENCRYPTED - Cannot decrypt in demo]";
+          // Properly decrypt the value to get plain text
+          plainText = await safeDecrypt(value);
         } else if (isSensitive) {
           // Create encrypted version while keeping plain text
-          const buffer = new TextEncoder().encode(value);
-          const hash = await crypto.subtle.digest("SHA-256", buffer);
-          const hashArray = Array.from(new Uint8Array(hash));
-          const hashHex = hashArray
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-          encryptedValue = `enc:${hashHex}`;
+          encryptedValue = await encryptValue(value);
           plainText = value;
         }
 
@@ -194,6 +184,34 @@ export function useEnvironmentSecurity() {
     [isSensitiveKey],
   );
 
+  // Bulk import environment variables from text
+  const bulkImportVariables = useCallback(
+    async (envText: string, options: { overwrite: boolean } = { overwrite: false }): Promise<ParseResult> => {
+      const parseResult = parseEnvText(envText);
+      const validVars = convertToEnvironmentVariables(parseResult.valid);
+      
+      // Process each valid variable
+      for (const { key, value } of validVars) {
+        // Check if variable already exists and overwrite is false
+        if (!options.overwrite && secureVars[key]) {
+          // Skip existing variables if overwrite is disabled
+          continue;
+        }
+        
+        // Use existing setEnvironmentVariable logic for proper encryption handling
+        await setEnvironmentVariable(key, value);
+      }
+      
+      return parseResult;
+    },
+    [secureVars, setEnvironmentVariable]
+  );
+
+  // Clear all environment variables
+  const clearAllVariables = useCallback(() => {
+    setSecureVars({});
+  }, []);
+
   return {
     secureVars,
     setEnvironmentVariable,
@@ -207,5 +225,7 @@ export function useEnvironmentSecurity() {
     getAllVariables,
     getAllVariablesWithMeta,
     loadVariables,
+    bulkImportVariables,
+    clearAllVariables,
   };
 }
