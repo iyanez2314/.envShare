@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
-import { requireOrganizationOwner } from "@/lib/role-utils";
+import {
+  requireOrganizationOwner,
+  requireOrganizationSuperOwner,
+} from "@/lib/role-utils";
 import { User } from "@/interfaces";
 import { OrganizationRole } from "@prisma/client";
 
@@ -10,9 +13,7 @@ export * from "./hierarchical-roles";
 
 export const createOrganizationFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    (data: { name: string; description?: string }) => data,
-  )
+  .validator((data: { name: string; description?: string }) => data)
   .handler(async ({ data, context }) => {
     try {
       const { user } = context as AuthContext;
@@ -57,11 +58,8 @@ export const createOrganizationFn = createServerFn({ method: "POST" })
 export const updateOrganizationFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
-    (data: {
-      orgId: string | number;
-      name?: string;
-      description?: string;
-    }) => data,
+    (data: { orgId: string | number; name?: string; description?: string }) =>
+      data,
   )
   .handler(async ({ data, context }) => {
     try {
@@ -110,14 +108,14 @@ export const deleteOrganizationFn = createServerFn({ method: "POST" })
       const orgIdNum =
         typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
 
-      const roleCheck = await requireOrganizationOwner(user.id, orgIdNum);
+      const roleCheck = await requireOrganizationSuperOwner(user.id, orgIdNum);
 
       if (!roleCheck.hasAccess) {
         return {
           success: false,
           message:
             roleCheck.error ||
-            "Forbidden: Only owners can delete the organization",
+            "Forbidden: Only Super owners can delete the organization",
         };
       }
 
@@ -200,12 +198,7 @@ export const updateOrganizationMemberRoleFn = createServerFn({ method: "POST" })
 
 export const removeOrganizationMemberFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    (data: {
-      memberId: number;
-      orgId: string | number;
-    }) => data,
-  )
+  .validator((data: { memberId: number; orgId: string | number }) => data)
   .handler(async ({ data, context }) => {
     try {
       const { user } = context as AuthContext;
