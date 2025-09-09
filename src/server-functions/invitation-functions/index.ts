@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
-import { requireOrganizationOwner } from "@/lib/role-utils";
-import { OrganizationRole } from "@prisma/client";
+import { requireOrganizationOwner, checkOrganizationRole, canManageUserRole } from "@/lib/role-utils";
+import { getAssignableRoles, canChangeUserRole } from "@/lib/role-permissions";
+import type { OrganizationRole } from "@/interfaces";
 
 export const getOrganizationInvitationsFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
@@ -15,10 +16,20 @@ export const getOrganizationInvitationsFn = createServerFn({ method: "POST" })
       const orgId =
         typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
 
-      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+      // Check if user has permission to view invitations (ADMIN or above)
+      const userRole = await checkOrganizationRole(userId, orgId);
 
-      if (!hasAccess) {
-        throw new Error("Forbidden: OWNER role required");
+      if (!userRole.hasAccess) {
+        throw new Error("Forbidden: Access denied to this organization");
+      }
+
+      // Only ADMIN or above can view invitations
+      const canViewInvitations = userRole.role === "SUPER_OWNER" || 
+                                userRole.role === "OWNER" || 
+                                userRole.role === "ADMIN";
+
+      if (!canViewInvitations) {
+        throw new Error("Forbidden: ADMIN role or higher required");
       }
 
       const invitations = await prismaClient.organizationInvitation.findMany({
@@ -71,10 +82,17 @@ export const updateInvitedUserRoleChangeFn = createServerFn({
       const orgId =
         typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
 
-      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+      // Check if user has permission to manage invitations
+      const userRole = await checkOrganizationRole(userId, orgId);
 
-      if (!hasAccess) {
-        throw new Error("Forbidden: OWNER role required");
+      if (!userRole.hasAccess) {
+        throw new Error("Forbidden: Access denied to this organization");
+      }
+
+      // Check if user can assign the requested role
+      const assignableRoles = getAssignableRoles(userRole.role);
+      if (!assignableRoles.includes(updatedRole)) {
+        throw new Error(`Forbidden: Cannot assign ${updatedRole} role`);
       }
 
       const updatedInvitation =
@@ -105,10 +123,20 @@ export const cancelOrganizationInvitationFn = createServerFn({ method: "POST" })
       const orgId =
         typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
 
-      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+      // Check if user has permission to cancel invitations
+      const userRole = await checkOrganizationRole(userId, orgId);
 
-      if (!hasAccess) {
-        throw new Error("Forbidden: OWNER role required");
+      if (!userRole.hasAccess) {
+        throw new Error("Forbidden: Access denied to this organization");
+      }
+
+      // Only ADMIN or above can cancel invitations
+      const canCancelInvitations = userRole.role === "SUPER_OWNER" || 
+                                  userRole.role === "OWNER" || 
+                                  userRole.role === "ADMIN";
+
+      if (!canCancelInvitations) {
+        throw new Error("Forbidden: ADMIN role or higher required");
       }
 
       await prismaClient.organizationInvitation.update({

@@ -17,22 +17,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Mail } from "lucide-react";
+import { RoleBadge } from "../role-badge";
+import type { OrganizationRole } from "@/interfaces";
+import { getAssignableRoles, getRoleDisplayName, getRoleDescription } from "@/lib/role-permissions";
 
 interface InviteUserDialogProps {
   open: boolean;
   onClose: () => void;
   organizationName: string;
-  onInvite: (data: { email: string; role: "OWNER" | "MEMBER" }) => void;
+  currentUserRole?: OrganizationRole;
+  onInvite: (data: { email: string; role: OrganizationRole }) => void;
 }
 
 export function InviteUserDialog({
   open,
   onClose,
   organizationName,
+  currentUserRole = "MEMBER",
   onInvite,
 }: InviteUserDialogProps) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"OWNER" | "MEMBER">("MEMBER");
+  const [role, setRole] = useState<OrganizationRole>("MEMBER");
+
+  // Get roles that the current user can assign
+  const assignableRoles = getAssignableRoles(currentUserRole);
 
   const handleSubmit = () => {
     if (!email.trim()) return;
@@ -79,15 +87,36 @@ export function InviteUserDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value: "OWNER" | "MEMBER") => setRole(value)}>
+            <Select value={role} onValueChange={(value: OrganizationRole) => setRole(value)}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={role} size="sm" />
+                    <span>{getRoleDisplayName(role)}</span>
+                  </div>
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MEMBER">Member</SelectItem>
-                <SelectItem value="OWNER">Owner</SelectItem>
+                {assignableRoles.map((availableRole) => (
+                  <SelectItem key={availableRole} value={availableRole}>
+                    <div className="flex items-center gap-2">
+                      <RoleBadge role={availableRole} size="sm" />
+                      <div>
+                        <div>{getRoleDisplayName(availableRole)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {getRoleDescription(availableRole)}
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            {assignableRoles.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                You don't have permission to invite new members.
+              </p>
+            )}
           </div>
         </div>
         <div className="flex justify-end gap-3">
@@ -96,7 +125,7 @@ export function InviteUserDialog({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!email.trim()}
+            disabled={!email.trim() || assignableRoles.length === 0}
             className="flex items-center gap-2"
           >
             <Mail className="h-4 w-4" />

@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { RoleBadge } from "./role-badge";
+import { RoleBadge as LegacyRoleBadge } from "./role-badge";
+import { RoleBadge } from "../role-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,10 +22,12 @@ import { Mail, Clock, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Invitation } from "./invitations-table";
 import { useState } from "react";
-import { OrganizationRole } from "@prisma/client";
+import type { OrganizationRole } from "@/interfaces";
+import { getAssignableRoles, getRoleDisplayName, getRoleDescription } from "@/lib/role-permissions";
 
 interface InvitationRowProps {
   invitation: Invitation;
+  currentUserRole?: OrganizationRole;
   onResend?: (invitationId: string | number) => void;
   onRoleChange?: (
     invitationId: string | number,
@@ -48,6 +51,7 @@ function getStatusBadgeVariant(status: string) {
 
 export function InvitationRow({
   invitation,
+  currentUserRole = "MEMBER",
   onResend,
   onRoleChange,
   onCancel,
@@ -58,6 +62,10 @@ export function InvitationRow({
     onRoleChange?.(invitation.id, newRole);
     setEditingRole(false);
   };
+
+  // Get roles that the current user can assign
+  const assignableRoles = getAssignableRoles(currentUserRole);
+  const invitationRole = invitation.role as OrganizationRole;
 
   return (
     <TableRow
@@ -77,16 +85,40 @@ export function InvitationRow({
       <TableCell>
         {editingRole ? (
           <Select value={invitation.role} onValueChange={handleRoleChange}>
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="MEMBER">Member</SelectItem>
-              <SelectItem value="OWNER">Owner</SelectItem>
+              {/* Include current role even if not in assignable roles */}
+              {!assignableRoles.includes(invitationRole) && (
+                <SelectItem value={invitationRole}>
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={invitationRole} size="sm" />
+                    <div>
+                      <div>{getRoleDisplayName(invitationRole)}</div>
+                      <div className="text-xs text-muted-foreground">Current role</div>
+                    </div>
+                  </div>
+                </SelectItem>
+              )}
+              
+              {assignableRoles.map((role) => (
+                <SelectItem key={role} value={role}>
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={role} size="sm" />
+                    <div>
+                      <div>{getRoleDisplayName(role)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {getRoleDescription(role)}
+                      </div>
+                    </div>
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         ) : (
-          <RoleBadge role={invitation.role} />
+          <RoleBadge role={invitationRole} size="md" />
         )}
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">

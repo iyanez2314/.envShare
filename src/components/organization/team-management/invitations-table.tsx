@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/table";
 import { UserPlus } from "lucide-react";
 import { InvitationRow } from "./invitation-row";
-import type { User } from "@/interfaces";
-import { OrganizationRole } from "@prisma/client";
+import type { User, OrganizationRole } from "@/interfaces";
 
 export interface Invitation {
   id: string | number;
@@ -27,6 +26,7 @@ export interface Invitation {
 
 interface InvitationsTableProps {
   invitations: Invitation[];
+  currentUserRole?: OrganizationRole;
   onInviteUser: () => void;
   onResendInvitation: (invitationId: string | number) => void;
   onChangeInvitationRole: (
@@ -38,6 +38,7 @@ interface InvitationsTableProps {
 
 export function InvitationsTable({
   invitations,
+  currentUserRole = "MEMBER",
   onInviteUser,
   onResendInvitation,
   onChangeInvitationRole,
@@ -75,6 +76,7 @@ export function InvitationsTable({
               <InvitationRow
                 key={invitation.id}
                 invitation={invitation}
+                currentUserRole={currentUserRole}
                 onResend={onResendInvitation}
                 onRoleChange={onChangeInvitationRole}
                 onCancel={onCancelInvitation}

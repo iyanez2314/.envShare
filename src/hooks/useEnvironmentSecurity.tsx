@@ -154,7 +154,7 @@ export function useEnvironmentSecurity() {
 
       for (const envVar of vars) {
         const { key, value } = envVar;
-        const isSensitive = isSensitiveKey(key);
+        const isSensitiveByPattern = isSensitiveKey(key);
         const isEncrypted = isEncryptedValue(value);
 
         let plainText = value;
@@ -164,7 +164,7 @@ export function useEnvironmentSecurity() {
           encryptedValue = value;
           // Properly decrypt the value to get plain text
           plainText = await safeDecrypt(value);
-        } else if (isSensitive) {
+        } else if (isSensitiveByPattern) {
           // Create encrypted version while keeping plain text
           encryptedValue = await encryptValue(value);
           plainText = value;
@@ -175,7 +175,8 @@ export function useEnvironmentSecurity() {
           plainText,
           encryptedValue,
           isEncrypted: encryptedValue !== null,
-          isSensitive,
+          // Mark as sensitive if it matches pattern OR if it's encrypted
+          isSensitive: isSensitiveByPattern || isEncrypted,
         };
       }
 

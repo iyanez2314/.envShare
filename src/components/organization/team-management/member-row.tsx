@@ -1,17 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { MemberAvatar } from "./member-avatar";
-import { RoleBadge } from "./role-badge";
+import { RoleBadge as LegacyRoleBadge } from "./role-badge";
+import { RoleBadge } from "../role-badge";
+import { MemberActions } from "../member-actions";
 import { MemberActionsMenu } from "./member-actions-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useState } from "react";
-import { OrganizationRole } from "@prisma/client";
+import type { OrganizationRole } from "@/interfaces";
 
 interface Member {
   id: number;
@@ -25,8 +20,10 @@ interface Member {
 interface MemberRowProps {
   member: Member;
   currentUserId: number | null;
+  currentUserRole?: OrganizationRole;
   onRoleChange?: (memberId: number, newRole: OrganizationRole) => void;
   onRemove?: (memberId: number) => void;
+  onTransferOwnership?: (memberId: number) => void;
 }
 
 function getStatusBadgeVariant(status: string) {
@@ -45,14 +42,30 @@ function getStatusBadgeVariant(status: string) {
 export function MemberRow({
   member,
   currentUserId,
+  currentUserRole = "MEMBER",
   onRoleChange,
   onRemove,
+  onTransferOwnership,
 }: MemberRowProps) {
-  const [editingRole, setEditingRole] = useState(false);
+  const isCurrentUser = member.id === currentUserId;
+  const memberRole = member.role as OrganizationRole;
 
-  const handleRoleChange = (newRole: OrganizationRole) => {
-    onRoleChange?.(member.id, newRole);
-    setEditingRole(false);
+  const handleRoleChange = async (newRole: OrganizationRole) => {
+    if (onRoleChange) {
+      await onRoleChange(member.id, newRole);
+    }
+  };
+
+  const handleRemove = async (memberId: number) => {
+    if (onRemove) {
+      await onRemove(memberId);
+    }
+  };
+
+  const handleTransferOwnership = async (memberId: number) => {
+    if (onTransferOwnership) {
+      await onTransferOwnership(memberId);
+    }
   };
 
   return (
@@ -61,7 +74,14 @@ export function MemberRow({
         <div className="flex items-center gap-3">
           <MemberAvatar name={member.name} email={member.email} />
           <div>
-            <div className="font-medium">{member.name}</div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{member.name}</span>
+              {isCurrentUser && (
+                <Badge variant="outline" className="text-xs">
+                  You
+                </Badge>
+              )}
+            </div>
             <div className="text-sm text-muted-foreground">
               {member.email}
             </div>
@@ -69,22 +89,7 @@ export function MemberRow({
         </div>
       </TableCell>
       <TableCell>
-        {editingRole ? (
-          <Select 
-            value={member.role} 
-            onValueChange={handleRoleChange}
-          >
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MEMBER">Member</SelectItem>
-              <SelectItem value="OWNER">Owner</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : (
-          <RoleBadge role={member.role} />
-        )}
+        <RoleBadge role={memberRole} size="md" />
       </TableCell>
       <TableCell>
         <Badge variant={getStatusBadgeVariant(member.status)}>
@@ -95,11 +100,16 @@ export function MemberRow({
         {new Date(member.joinedAt).toLocaleDateString()}
       </TableCell>
       <TableCell>
-        <MemberActionsMenu
-          member={member}
-          currentUserId={currentUserId}
-          onRoleChange={() => setEditingRole(true)}
-          onRemove={onRemove}
+        <MemberActions
+          currentUserRole={currentUserRole}
+          targetUserRole={memberRole}
+          targetUserId={member.id}
+          targetUserName={member.name}
+          targetUserEmail={member.email}
+          isCurrentUser={isCurrentUser}
+          onRoleChange={handleRoleChange}
+          onRemoveUser={handleRemove}
+          onTransferOwnership={handleTransferOwnership}
         />
       </TableCell>
     </TableRow>

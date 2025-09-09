@@ -1,64 +1,60 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  organizations Organization[] @relation("OrganizationUsers")
-  projects   Project[] @relation("ProjectUsers")
-  ownedOrganizations Organization[] @relation("OrganizationOwner")
-  ownedProjects Project[] @relation("ProjectOwner")
-  organizationRoles UserOrganizationRole[]
-  projectRoles UserProjectRole[]
-  sentInvitations OrganizationInvitation[] @relation("InvitationsSent")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 Int                      @id @default(autoincrement())
+  email              String                   @unique
+  name               String?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  password           String
+  ownedOrganizations Organization[]           @relation("OrganizationOwner") // Legacy relation
+  superOwnedOrganizations Organization[]      @relation("OrganizationSuperOwner") // New relation
+  sentInvitations    OrganizationInvitation[] @relation("InvitationsSent")
+  ownedProjects      Project[]                @relation("ProjectOwner")
+  organizationRoles  UserOrganizationRole[]
+  projectRoles       UserProjectRole[]
+  organizations      Organization[]           @relation("OrganizationUsers")
+  projects           Project[]                @relation("ProjectUsers")
 }
 
-model Organization { 
-  id        Int      @id @default(autoincrement())
-  name      String
+model Organization {
+  id          Int                      @id @default(autoincrement())
+  name        String
   description String?
-  ownerId  Int
-  owner    User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
-  users     User[]   @relation("OrganizationUsers")
-  projects  Project[]
-  userRoles UserOrganizationRole[]
+  ownerId     Int // Legacy field - deprecated in favor of superOwnerId
+  superOwnerId Int // New field for hierarchical ownership
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  owner       User                     @relation("OrganizationOwner", fields: [ownerId], references: [id]) // Legacy relation
+  superOwner  User                     @relation("OrganizationSuperOwner", fields: [superOwnerId], references: [id]) // New relation
   invitations OrganizationInvitation[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  projects    Project[]
+  userRoles   UserOrganizationRole[]
+  users       User[]                   @relation("OrganizationUsers")
 }
 
 model Project {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  githubUrl String?
+  id             Int                   @id @default(autoincrement())
+  name           String
+  description    String?
+  githubUrl      String?
   organizationId Int
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  teamMembers User[]   @relation("ProjectUsers")
-  ownerId     Int
-  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
-  envVars     EnvironmentVariable[]
-  userRoles   UserProjectRole[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  ownerId        Int
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  envVars        EnvironmentVariable[]
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner          User                  @relation("ProjectOwner", fields: [ownerId], references: [id])
+  userRoles      UserProjectRole[]
+  teamMembers    User[]                @relation("ProjectUsers")
 }
 
 model EnvironmentVariable {
@@ -66,10 +62,10 @@ model EnvironmentVariable {
   key       String
   value     String
   projectId Int
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@unique([projectId, key])
 }
 
@@ -78,11 +74,11 @@ model UserOrganizationRole {
   userId         Int
   organizationId Int
   role           OrganizationRole @default(MEMBER)
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, organizationId])
 }
 
@@ -91,34 +87,12 @@ model UserProjectRole {
   userId    Int
   projectId Int
   role      ProjectRole @default(VIEWER)
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-  
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, projectId])
-}
-
-
-
-enum ProjectRole {
-  OWNER
-  EDITOR
-  VIEWER
-}
-
-
-enum OrganizationRole {
-  OWNER
-  MEMBER
-}
-
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  EXPIRED
-  CANCELLED
 }
 
 model OrganizationInvitation {
@@ -130,9 +104,29 @@ model OrganizationInvitation {
   invitedBy      Int
   createdAt      DateTime         @default(now())
   expiresAt      DateTime?
-  
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   inviter        User             @relation("InvitationsSent", fields: [invitedBy], references: [id])
-  
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@unique([email, organizationId])
+}
+
+enum ProjectRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum OrganizationRole {
+  SUPER_OWNER
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
 }

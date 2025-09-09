@@ -6,6 +6,7 @@ import { User } from "@/interfaces";
 import { OrganizationRole } from "@prisma/client";
 
 export * from "./user-organizations";
+export * from "./hierarchical-roles";
 
 export const createOrganizationFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
@@ -22,11 +23,12 @@ export const createOrganizationFn = createServerFn({ method: "POST" })
           userRoles: {
             create: {
               userId: user.id,
-              role: "OWNER",
+              role: "SUPER_OWNER", // New organizations start with creator as super owner
             },
           },
           description: data.description,
-          ownerId: user.id,
+          ownerId: user.id, // Legacy field for compatibility
+          superOwnerId: user.id, // New hierarchical field
           users: {
             connect: { id: user.id },
           },

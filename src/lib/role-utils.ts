@@ -128,8 +128,11 @@ export const checkProjectRole = async (
       };
     }
 
-    // Map org role to project role (OWNER -> OWNER, MEMBER -> VIEWER)
-    const mappedProjectRole: ProjectRole = orgRole === "OWNER" ? "OWNER" : "VIEWER";
+    // Map org role to project role
+    const mappedProjectRole: ProjectRole = 
+      orgRole === "SUPER_OWNER" || orgRole === "OWNER" ? "OWNER" :
+      orgRole === "ADMIN" ? "EDITOR" : 
+      "VIEWER";
 
     if (!requiredRole) {
       return { 
@@ -163,7 +166,9 @@ export const checkOrganizationRoleHierarchy = (
   requiredRole: OrganizationRole
 ): boolean => {
   const hierarchy: Record<OrganizationRole, number> = {
-    "OWNER": 2,
+    "SUPER_OWNER": 4,
+    "OWNER": 3,
+    "ADMIN": 2,
     "MEMBER": 1,
   };
 
@@ -184,16 +189,79 @@ export const checkProjectRoleHierarchy = (
   return hierarchy[userRole] >= hierarchy[requiredRole];
 };
 
-// Convenience function for common "owner only" checks
+// Convenience functions for organization role checks
+export const requireOrganizationSuperOwner = async (userId: number, organizationId: number) => {
+  return await checkOrganizationRole(userId, organizationId, "SUPER_OWNER");
+};
+
 export const requireOrganizationOwner = async (userId: number, organizationId: number) => {
   return await checkOrganizationRole(userId, organizationId, "OWNER");
 };
 
+export const requireOrganizationAdmin = async (userId: number, organizationId: number) => {
+  return await checkOrganizationRole(userId, organizationId, "ADMIN");
+};
+
+export const requireOrganizationMember = async (userId: number, organizationId: number) => {
+  return await checkOrganizationRole(userId, organizationId, "MEMBER");
+};
+
+// Convenience functions for project role checks
 export const requireProjectOwner = async (userId: number, projectId: number) => {
   return await checkProjectRole(userId, projectId, "OWNER");
 };
 
-// Convenience function for "editor or above" checks
 export const requireProjectEditor = async (userId: number, projectId: number) => {
   return await checkProjectRole(userId, projectId, "EDITOR");
+};
+
+// Helper to check if user can manage another user's role
+export const canManageUserRole = async (
+  managerId: number, 
+  targetUserId: number, 
+  organizationId: number
+): Promise<{ canManage: boolean; error?: string }> => {
+  try {
+    const [managerRole, targetRole] = await Promise.all([
+      checkOrganizationRole(managerId, organizationId),
+      checkOrganizationRole(targetUserId, organizationId)
+    ]);
+
+    if (!managerRole.hasAccess || !targetRole.hasAccess) {
+      return { canManage: false, error: "User not found in organization" };
+    }
+
+    // Super owners can manage anyone except other super owners
+    if (managerRole.role === "SUPER_OWNER") {
+      return { 
+        canManage: targetRole.role !== "SUPER_OWNER",
+        error: targetRole.role === "SUPER_OWNER" ? "Cannot manage other super owners" : undefined
+      };
+    }
+
+    // Owners can manage admins and members
+    if (managerRole.role === "OWNER") {
+      return { 
+        canManage: targetRole.role === "ADMIN" || targetRole.role === "MEMBER",
+        error: targetRole.role === "OWNER" || targetRole.role === "SUPER_OWNER" ? 
+          "Cannot manage users with equal or higher privileges" : undefined
+      };
+    }
+
+    // Admins can only manage members
+    if (managerRole.role === "ADMIN") {
+      return { 
+        canManage: targetRole.role === "MEMBER",
+        error: targetRole.role !== "MEMBER" ? 
+          "Can only manage members" : undefined
+      };
+    }
+
+    // Members cannot manage anyone
+    return { canManage: false, error: "Insufficient privileges" };
+
+  } catch (error) {
+    console.error("Error checking user management permissions:", error);
+    return { canManage: false, error: "Internal server error" };
+  }
 };

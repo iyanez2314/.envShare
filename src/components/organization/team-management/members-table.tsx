@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MemberRow } from "./member-row";
-import { OrganizationRole } from "@prisma/client";
+import type { OrganizationRole } from "@/interfaces";
 
 interface Member {
   id: number;
@@ -21,15 +21,19 @@ interface Member {
 interface MembersTableProps {
   members: Member[];
   currentUserId: number | null;
+  currentUserRole?: OrganizationRole;
   onRoleChange: (memberId: number, newRole: OrganizationRole) => void;
   onRemoveMember: (memberId: number) => void;
+  onTransferOwnership?: (memberId: number) => void;
 }
 
 export function MembersTable({
   members,
   currentUserId,
+  currentUserRole = "MEMBER",
   onRoleChange,
   onRemoveMember,
+  onTransferOwnership,
 }: MembersTableProps) {
   return (
     <TabsContent value="members" className="mt-6">
@@ -50,8 +54,10 @@ export function MembersTable({
                 key={member.id}
                 member={member}
                 currentUserId={currentUserId}
+                currentUserRole={currentUserRole}
                 onRoleChange={onRoleChange}
                 onRemove={onRemoveMember}
+                onTransferOwnership={onTransferOwnership}
               />
             ))}
           </TableBody>

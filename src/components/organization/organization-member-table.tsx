@@ -66,6 +66,11 @@ export function OrganizationMembersTable({
 
   const invitations = invitationsResponse?.data || [];
 
+  // Get current user's role in the organization
+  const currentUserRole = organization.userRoles?.find(
+    (ur) => ur.userId === currentUserId,
+  )?.role || "MEMBER";
+
   // Get organization members with their roles
   const members =
     organization.users?.map((user) => {
@@ -85,7 +90,7 @@ export function OrganizationMembersTable({
 
   const handleInviteUser = (data: {
     email: string;
-    role: "OWNER" | "MEMBER";
+    role: OrganizationRole;
   }) => {
     // TODO: Implement invite logic
     console.log("Inviting user:", data);
@@ -213,12 +218,14 @@ export function OrganizationMembersTable({
         <MembersTable
           members={members}
           currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
           onRoleChange={handleRoleChange}
           onRemoveMember={handleRemoveMember}
         />
 
         <InvitationsTable
           invitations={invitations}
+          currentUserRole={currentUserRole}
           onInviteUser={() => setShowInviteModal(true)}
           onResendInvitation={handleResendInvitation}
           onChangeInvitationRole={handleChangeInvitationRole}
@@ -230,6 +237,7 @@ export function OrganizationMembersTable({
         open={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         organizationName={organization.name}
+        currentUserRole={currentUserRole}
         onInvite={handleInviteUser}
       />
 
