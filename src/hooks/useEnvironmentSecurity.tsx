@@ -212,6 +212,41 @@ export function useEnvironmentSecurity() {
     setSecureVars({});
   }, []);
 
+  // Toggle encryption for a specific variable
+  const toggleEncryption = useCallback(
+    async (key: string) => {
+      const envVar = secureVars[key];
+      if (!envVar) return;
+
+      if (envVar.isEncrypted) {
+        // Decrypt: remove encryption and mark as not sensitive if it wasn't originally sensitive
+        const wasOriginallySensitive = isSensitiveKey(key);
+        setSecureVars((prev) => ({
+          ...prev,
+          [key]: {
+            ...envVar,
+            encryptedValue: null,
+            isEncrypted: false,
+            isSensitive: wasOriginallySensitive, // Keep original sensitivity
+          },
+        }));
+      } else {
+        // Encrypt: create encrypted version and mark as sensitive
+        const encryptedValue = await encryptValue(envVar.plainText);
+        setSecureVars((prev) => ({
+          ...prev,
+          [key]: {
+            ...envVar,
+            encryptedValue,
+            isEncrypted: true,
+            isSensitive: true, // Mark as sensitive when manually encrypted
+          },
+        }));
+      }
+    },
+    [secureVars],
+  );
+
   return {
     secureVars,
     setEnvironmentVariable,
@@ -227,5 +262,6 @@ export function useEnvironmentSecurity() {
     loadVariables,
     bulkImportVariables,
     clearAllVariables,
+    toggleEncryption,
   };
 }

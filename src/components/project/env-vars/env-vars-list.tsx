@@ -16,6 +16,7 @@ interface EnvVarsListProps {
   getPlainTextValue: (key: string) => string;
   getEncryptedValue: (key: string) => string | null;
   onRemove: (key: string) => void;
+  onToggleEncryption: (key: string) => Promise<void>;
   canEdit: boolean;
 }
 
@@ -25,6 +26,7 @@ export function EnvVarsList({
   getPlainTextValue,
   getEncryptedValue,
   onRemove,
+  onToggleEncryption,
   canEdit,
 }: EnvVarsListProps) {
   const envVarEntries = Object.entries(secureVars);
@@ -60,6 +62,7 @@ export function EnvVarsList({
               getPlainTextValue={getPlainTextValue}
               getEncryptedValue={getEncryptedValue}
               onRemove={onRemove}
+              onToggleEncryption={onToggleEncryption}
               canEdit={canEdit}
             />
           ))}

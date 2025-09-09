@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Key, Eye, EyeOff, Shield } from "lucide-react";
+import { Trash2, Key, Eye, EyeOff, Shield, Lock, Unlock } from "lucide-react";
 
 interface SecureEnvironmentVariable {
   key: string;
@@ -19,6 +19,7 @@ interface EnvVarRowProps {
   getPlainTextValue: (key: string) => string;
   getEncryptedValue: (key: string) => string | null;
   onRemove: (key: string) => void;
+  onToggleEncryption: (key: string) => Promise<void>;
   canEdit: boolean;
 }
 
@@ -29,10 +30,12 @@ export function EnvVarRow({
   getPlainTextValue,
   getEncryptedValue,
   onRemove,
+  onToggleEncryption,
   canEdit,
 }: EnvVarRowProps) {
   const [isValueVisible, setIsValueVisible] = useState(false);
   const [showEncrypted, setShowEncrypted] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
   const toggleValueVisibility = () => {
     setIsValueVisible(!isValueVisible);
@@ -40,6 +43,17 @@ export function EnvVarRow({
 
   const toggleEncryptedView = () => {
     setShowEncrypted(!showEncrypted);
+  };
+
+  const handleToggleEncryption = async () => {
+    if (!canEdit) return;
+    
+    setIsToggling(true);
+    try {
+      await onToggleEncryption(envKey);
+    } finally {
+      setIsToggling(false);
+    }
   };
 
   const getValueToDisplay = () => {
@@ -56,7 +70,9 @@ export function EnvVarRow({
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 rounded-lg border ${
+      className={`flex items-center gap-3 p-3 rounded-lg border transition-opacity ${
+        isToggling ? "opacity-50 pointer-events-none" : ""
+      } ${
         envVar.isSensitive
           ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
           : "bg-card border-border"
@@ -99,6 +115,7 @@ export function EnvVarRow({
                 variant="ghost"
                 size="sm"
                 onClick={toggleEncryptedView}
+                disabled={isToggling}
                 className="h-5 px-1 text-xs"
               >
                 {showEncrypted ? "Plain" : "Encrypted"}
@@ -113,6 +130,7 @@ export function EnvVarRow({
               variant="ghost"
               size="sm"
               onClick={toggleValueVisibility}
+              disabled={isToggling}
               className="h-6 w-6 p-0"
             >
               {isValueVisible ? (
@@ -132,14 +150,33 @@ export function EnvVarRow({
         </div>
       </div>
       {canEdit && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onRemove(envKey)}
-          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleEncryption}
+            disabled={isToggling}
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            title={envVar.isEncrypted ? "Decrypt variable" : "Encrypt variable"}
+          >
+            {isToggling ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : envVar.isEncrypted ? (
+              <Unlock className="h-4 w-4" />
+            ) : (
+              <Lock className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(envKey)}
+            disabled={isToggling}
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       )}
     </div>
   );
