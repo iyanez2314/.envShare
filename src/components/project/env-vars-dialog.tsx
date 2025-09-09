@@ -48,6 +48,7 @@ export function EnvVarsDialog({
     getAllVariablesWithMeta,
     loadVariables,
     bulkImportVariables,
+    toggleEncryption,
   } = useEnvironmentSecurity();
 
   // Load existing variables on mount
@@ -121,6 +122,7 @@ export function EnvVarsDialog({
             getPlainTextValue={getPlainTextValue}
             getEncryptedValue={getEncryptedValue}
             onRemove={removeEnvironmentVariable}
+            onToggleEncryption={toggleEncryption}
             canEdit={canEdit}
           />
         </div>
