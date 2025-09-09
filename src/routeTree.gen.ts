@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardOrganizationIdRouteImport } from './routes/dashboard/organization.$id'
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
@@ -29,6 +30,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardOrganizationIdRoute = DashboardOrganizationIdRouteImport.update({
   id: '/organization/$id',
   path: '/organization/$id',
@@ -38,11 +44,13 @@ const DashboardOrganizationIdRoute = DashboardOrganizationIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/organization/$id': typeof DashboardOrganizationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/organization/$id': typeof DashboardOrganizationIdRoute
 }
@@ -50,18 +58,25 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/organization/$id': typeof DashboardOrganizationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/dashboard/' | '/dashboard/organization/$id'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/settings'
+    | '/dashboard/'
+    | '/dashboard/organization/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/dashboard/organization/$id'
+  to: '/' | '/dashboard/settings' | '/dashboard' | '/dashboard/organization/$id'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/dashboard/settings'
     | '/dashboard/'
     | '/dashboard/organization/$id'
   fileRoutesById: FileRoutesById
@@ -94,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/organization/$id': {
       id: '/dashboard/organization/$id'
       path: '/organization/$id'
@@ -105,11 +127,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteRouteChildren {
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardOrganizationIdRoute: typeof DashboardOrganizationIdRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardOrganizationIdRoute: DashboardOrganizationIdRoute,
 }

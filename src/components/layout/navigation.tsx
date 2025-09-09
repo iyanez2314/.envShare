@@ -8,7 +8,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "./theme-provider";
 import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowRight, Settings, Moon, Sun, User, LogOut } from "lucide-react";
+import {
+  ArrowRight,
+  Settings,
+  Moon,
+  Sun,
+  User,
+  LogOut,
+  LayoutDashboard,
+} from "lucide-react";
 import { logoutFn } from "@/server-functions/auth-functions";
 import { toast } from "sonner";
 
@@ -22,11 +30,11 @@ interface NavigationProps {
   } | null;
 }
 
-export function Navigation({ 
-  onGetStarted, 
-  showGetStarted = true, 
+export function Navigation({
+  onGetStarted,
+  showGetStarted = true,
   isAuthenticated = false,
-  currentUser = null 
+  currentUser = null,
 }: NavigationProps) {
   const { setTheme } = useTheme();
   const router = useRouter();
@@ -116,17 +124,31 @@ export function Navigation({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-3 py-2">
-                    <p className="text-sm font-medium">{currentUser.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                    <p className="text-sm font-medium">
+                      {currentUser.name || "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {currentUser.email}
+                    </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled>
-                    <Settings className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem
+                    onClick={() => router.navigate({ to: "/dashboard" })}
+                  >
+                    <LayoutDashboard className="mr-2 size-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      router.navigate({ to: "/dashboard/settings" })
+                    }
+                  >
+                    <Settings className="mr-2 size-4" />
                     Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="mr-2 size-4" />
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -136,7 +158,7 @@ export function Navigation({
             {/* Get Started Button - Show when not authenticated */}
             {showGetStarted && !isAuthenticated && (
               <Button onClick={onGetStarted}>
-                Get Started <ArrowRight className="ml-2 w-4 h-4" />
+                Get Started <ArrowRight className="ml-2 size-4" />
               </Button>
             )}
           </div>
