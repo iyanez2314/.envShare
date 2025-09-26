@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/dialog";
 import { RoleBadge } from "./role-badge";
 import type { OrganizationRole } from "@/interfaces";
-import { 
-  getAssignableRoles, 
-  getRoleDisplayName, 
+import {
+  getAssignableRoles,
+  getRoleDisplayName,
   getRoleDescription,
-  canChangeUserRole
+  canChangeUserRole,
 } from "@/lib/role-permissions";
 
 interface RoleSelectorProps {
@@ -43,11 +43,16 @@ export function RoleSelector({
   isOpen,
   onClose,
 }: RoleSelectorProps) {
-  const [selectedRole, setSelectedRole] = useState<OrganizationRole>(targetUserRole);
+  const [selectedRole, setSelectedRole] =
+    useState<OrganizationRole>(targetUserRole);
   const [isLoading, setIsLoading] = useState(false);
 
   const assignableRoles = getAssignableRoles(currentUserRole);
-  const canChange = canChangeUserRole(currentUserRole, targetUserRole, selectedRole);
+  const canChange = canChangeUserRole(
+    currentUserRole,
+    targetUserRole,
+    selectedRole,
+  );
   const hasChanges = selectedRole !== targetUserRole;
 
   const handleConfirm = async () => {
@@ -65,7 +70,7 @@ export function RoleSelector({
   };
 
   const handleClose = () => {
-    setSelectedRole(targetUserRole); // Reset to original role
+    setSelectedRole(targetUserRole);
     onClose();
   };
 
@@ -80,7 +85,8 @@ export function RoleSelector({
         <DialogHeader>
           <DialogTitle>Change User Role</DialogTitle>
           <DialogDescription>
-            Modify the role for <strong>{targetUserName || targetUserEmail}</strong>
+            Modify the role for{" "}
+            <strong>{targetUserName || targetUserEmail}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -99,7 +105,9 @@ export function RoleSelector({
             <label className="text-sm font-medium">New Role</label>
             <Select
               value={selectedRole}
-              onValueChange={(value) => setSelectedRole(value as OrganizationRole)}
+              onValueChange={(value) =>
+                setSelectedRole(value as OrganizationRole)
+              }
             >
               <SelectTrigger>
                 <SelectValue>
@@ -117,12 +125,14 @@ export function RoleSelector({
                       <RoleBadge role={targetUserRole} size="sm" />
                       <div>
                         <div>{getRoleDisplayName(targetUserRole)}</div>
-                        <div className="text-xs text-muted-foreground">Current role</div>
+                        <div className="text-xs text-muted-foreground">
+                          Current role
+                        </div>
                       </div>
                     </div>
                   </SelectItem>
                 )}
-                
+
                 {assignableRoles.map((role) => (
                   <SelectItem key={role} value={role}>
                     <div className="flex items-center gap-2">
@@ -144,7 +154,8 @@ export function RoleSelector({
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800">
               <div className="flex items-start gap-2">
                 <div className="text-amber-600 text-sm">
-                  ⚠️ <strong>Role Downgrade:</strong> This user will lose some permissions.
+                  ⚠️ <strong>Role Downgrade:</strong> This user will lose some
+                  permissions.
                 </div>
               </div>
             </div>
@@ -166,3 +177,4 @@ export function RoleSelector({
     </Dialog>
   );
 }
+

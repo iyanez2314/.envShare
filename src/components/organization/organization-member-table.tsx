@@ -18,10 +18,11 @@ import {
   updateInvitedUserRoleChangeFn,
   cancelOrganizationInvitationFn,
 } from "@/server-functions/invitation-functions";
-import { 
+import {
   updateOrganizationMemberRoleFn,
-  removeOrganizationMemberFn 
+  removeOrganizationMemberFn,
 } from "@/server-functions/organization-functions";
+import { transferSuperOwnershipFn } from "@/server-functions/organization-functions/hierarchical-roles";
 import { toast } from "sonner";
 import { OrganizationRole } from "@prisma/client";
 
@@ -36,7 +37,6 @@ export function OrganizationMembersTable({
   organization,
   currentUserId,
 }: OrganizationMembersTableProps) {
-  console.log("Organization data:", organization);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("members");
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -46,6 +46,10 @@ export function OrganizationMembersTable({
     queryKey: ["organization-invitations", organization.id],
     queryFn: () =>
       getOrganizationInvitationsFn({ data: { orgId: organization.id } }),
+  });
+
+  const transferOwnershipMutation = useMutation({
+    mutationFn: transferSuperOwnershipFn,
   });
 
   const updateInvitationRoleMutation = useMutation({
@@ -67,9 +71,9 @@ export function OrganizationMembersTable({
   const invitations = invitationsResponse?.data || [];
 
   // Get current user's role in the organization
-  const currentUserRole = organization.userRoles?.find(
-    (ur) => ur.userId === currentUserId,
-  )?.role || "MEMBER";
+  const currentUserRole =
+    organization.userRoles?.find((ur) => ur.userId === currentUserId)?.role ||
+    "MEMBER";
 
   // Get organization members with their roles
   const members =
@@ -122,7 +126,7 @@ export function OrganizationMembersTable({
   };
 
   const handleRemoveMember = (memberId: number) => {
-    const member = members.find(m => m.id === memberId);
+    const member = members.find((m) => m.id === memberId);
     if (member) {
       setMemberToRemove(member);
     }
@@ -152,6 +156,27 @@ export function OrganizationMembersTable({
 
   const handleResendInvitation = (invitationId: string | number) => {
     console.log("Resending invitation:", invitationId);
+  };
+
+  const handleTransferOwnership = (newOwnerId: number) => {
+    toast.promise(
+      transferOwnershipMutation.mutateAsync({
+        data: {
+          newSuperOwnerId: newOwnerId,
+          organizationId: organization.id,
+        },
+      }),
+      {
+        loading: "Transferring ownership...",
+        success: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["organizations"],
+          });
+          return "Ownership transferred successfully!";
+        },
+        error: "Failed to transfer ownership, please try again later.",
+      },
+    );
   };
 
   const handleChangeInvitationRole = (
@@ -221,6 +246,7 @@ export function OrganizationMembersTable({
           currentUserRole={currentUserRole}
           onRoleChange={handleRoleChange}
           onRemoveMember={handleRemoveMember}
+          onTransferOwnership={handleTransferOwnership}
         />
 
         <InvitationsTable

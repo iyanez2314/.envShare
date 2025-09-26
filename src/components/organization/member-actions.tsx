@@ -20,11 +20,11 @@ import {
 import { MoreHorizontal, UserMinus, Settings, Crown } from "lucide-react";
 import { RoleSelector } from "./role-selector";
 import type { OrganizationRole } from "@/interfaces";
-import { 
-  canRemoveUser, 
-  canChangeUserRole, 
+import {
+  canRemoveUser,
+  canChangeUserRole,
   getRoleDisplayName,
-  isPrivilegedRole 
+  isPrivilegedRole,
 } from "@/lib/role-permissions";
 
 interface MemberActionsProps {
@@ -55,9 +55,13 @@ export function MemberActions({
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const canRemove = !isCurrentUser && canRemoveUser(currentUserRole, targetUserRole);
-  const canChangeRole = !isCurrentUser && canChangeUserRole(currentUserRole, targetUserRole, targetUserRole);
-  const canTransfer = currentUserRole === "SUPER_OWNER" && !isCurrentUser && onTransferOwnership;
+  const canRemove =
+    !isCurrentUser && canRemoveUser(currentUserRole, targetUserRole);
+  const canChangeRole =
+    !isCurrentUser &&
+    canChangeUserRole(currentUserRole, targetUserRole, targetUserRole);
+  const canTransfer =
+    currentUserRole === "SUPER_OWNER" && !isCurrentUser && onTransferOwnership;
 
   // If no actions are available, don't render the menu
   if (!canRemove && !canChangeRole && !canTransfer) {
@@ -83,7 +87,7 @@ export function MemberActions({
 
   const handleTransferOwnership = async () => {
     if (!onTransferOwnership) return;
-    
+
     setIsLoading(true);
     try {
       await onTransferOwnership(targetUserId);
@@ -151,10 +155,13 @@ export function MemberActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Remove User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove <strong>{targetUserName || targetUserEmail}</strong> from this organization?
+              Are you sure you want to remove{" "}
+              <strong>{targetUserName || targetUserEmail}</strong> from this
+              organization?
               {isPrivilegedRole(targetUserRole) && (
                 <div className="mt-2 text-amber-600 dark:text-amber-400">
-                  ⚠️ This user has {getRoleDisplayName(targetUserRole)} privileges and will lose access to all organization resources.
+                  ⚠️ This user has {getRoleDisplayName(targetUserRole)}{" "}
+                  privileges and will lose access to all organization resources.
                 </div>
               )}
             </AlertDialogDescription>
@@ -174,12 +181,16 @@ export function MemberActions({
 
       {/* Transfer Ownership Dialog */}
       {canTransfer && (
-        <AlertDialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <AlertDialog
+          open={showTransferDialog}
+          onOpenChange={setShowTransferDialog}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Transfer Super Ownership</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to transfer super ownership to <strong>{targetUserName || targetUserEmail}</strong>?
+                Are you sure you want to transfer super ownership to{" "}
+                <strong>{targetUserName || targetUserEmail}</strong>?
                 <div className="mt-2 space-y-1 text-sm">
                   <div className="text-amber-600 dark:text-amber-400">
                     ⚠️ <strong>This action cannot be undone.</strong>
@@ -206,3 +217,4 @@ export function MemberActions({
     </>
   );
 }
+

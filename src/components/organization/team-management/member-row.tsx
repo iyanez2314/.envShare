@@ -21,7 +21,7 @@ interface MemberRowProps {
   member: Member;
   currentUserId: number | null;
   currentUserRole?: OrganizationRole;
-  onRoleChange?: (memberId: number, newRole: OrganizationRole) => void;
+  onRoleChange?: (memberId: number, newRole: OrganizationRole) => Promise<void>;
   onRemove?: (memberId: number) => void;
   onTransferOwnership?: (memberId: number) => void;
 }
@@ -50,7 +50,10 @@ export function MemberRow({
   const isCurrentUser = member.id === currentUserId;
   const memberRole = member.role as OrganizationRole;
 
-  const handleRoleChange = async (newRole: OrganizationRole) => {
+  const handleRoleChange = async (
+    userId: number,
+    newRole: OrganizationRole,
+  ) => {
     if (onRoleChange) {
       await onRoleChange(member.id, newRole);
     }
@@ -82,9 +85,7 @@ export function MemberRow({
                 </Badge>
               )}
             </div>
-            <div className="text-sm text-muted-foreground">
-              {member.email}
-            </div>
+            <div className="text-sm text-muted-foreground">{member.email}</div>
           </div>
         </div>
       </TableCell>
