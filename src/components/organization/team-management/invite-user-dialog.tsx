@@ -19,7 +19,11 @@ import {
 import { Mail } from "lucide-react";
 import { RoleBadge } from "../role-badge";
 import type { OrganizationRole } from "@/interfaces";
-import { getAssignableRoles, getRoleDisplayName, getRoleDescription } from "@/lib/role-permissions";
+import {
+  getAssignableRoles,
+  getRoleDisplayName,
+  getRoleDescription,
+} from "@/lib/role-permissions";
 
 interface InviteUserDialogProps {
   open: boolean;
@@ -39,14 +43,13 @@ export function InviteUserDialog({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<OrganizationRole>("MEMBER");
 
-  // Get roles that the current user can assign
   const assignableRoles = getAssignableRoles(currentUserRole);
 
   const handleSubmit = () => {
     if (!email.trim()) return;
-    
+
     onInvite({ email: email.trim(), role });
-    
+
     // Reset form
     setEmail("");
     setRole("MEMBER");
@@ -87,7 +90,10 @@ export function InviteUserDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value: OrganizationRole) => setRole(value)}>
+            <Select
+              value={role}
+              onValueChange={(value: OrganizationRole) => setRole(value)}
+            >
               <SelectTrigger>
                 <SelectValue>
                   <div className="flex items-center gap-2">
@@ -123,7 +129,7 @@ export function InviteUserDialog({
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={!email.trim() || assignableRoles.length === 0}
             className="flex items-center gap-2"
@@ -136,3 +142,4 @@ export function InviteUserDialog({
     </Dialog>
   );
 }
+

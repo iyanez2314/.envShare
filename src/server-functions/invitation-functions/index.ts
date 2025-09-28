@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware, AuthContext } from "@/middleware/auth-middleware";
 import { prismaClient } from "@/services/prisma";
-import { requireOrganizationOwner, checkOrganizationRole, canManageUserRole } from "@/lib/role-utils";
+import { resend } from "@/services/resend";
+import { z } from "zod";
+import {
+  requireOrganizationOwner,
+  checkOrganizationRole,
+  canManageUserRole,
+} from "@/lib/role-utils";
 import { getAssignableRoles, canChangeUserRole } from "@/lib/role-permissions";
 import type { OrganizationRole } from "@/interfaces";
 
@@ -24,9 +30,10 @@ export const getOrganizationInvitationsFn = createServerFn({ method: "POST" })
       }
 
       // Only ADMIN or above can view invitations
-      const canViewInvitations = userRole.role === "SUPER_OWNER" || 
-                                userRole.role === "OWNER" || 
-                                userRole.role === "ADMIN";
+      const canViewInvitations =
+        userRole.role === "SUPER_OWNER" ||
+        userRole.role === "OWNER" ||
+        userRole.role === "ADMIN";
 
       if (!canViewInvitations) {
         throw new Error("Forbidden: ADMIN role or higher required");
@@ -131,9 +138,10 @@ export const cancelOrganizationInvitationFn = createServerFn({ method: "POST" })
       }
 
       // Only ADMIN or above can cancel invitations
-      const canCancelInvitations = userRole.role === "SUPER_OWNER" || 
-                                  userRole.role === "OWNER" || 
-                                  userRole.role === "ADMIN";
+      const canCancelInvitations =
+        userRole.role === "SUPER_OWNER" ||
+        userRole.role === "OWNER" ||
+        userRole.role === "ADMIN";
 
       if (!canCancelInvitations) {
         throw new Error("Forbidden: ADMIN role or higher required");
@@ -148,5 +156,64 @@ export const cancelOrganizationInvitationFn = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("Error cancelling organization invitation:", error);
       throw new Error("Internal Server Error");
+    }
+  });
+
+export const sendEmailFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((data: { to: string; orgId: string | number }) => {
+    return z
+      .object({
+        to: z.string().email(),
+        orgId: z.union([z.string(), z.number()]),
+      })
+      .parse(data);
+  })
+  .handler(async ({ data, context }) => {
+    try {
+      const { user, valid } = context as AuthContext;
+
+      if (!valid) {
+        throw new Error("Unauthorized");
+      }
+
+      const userId = typeof user.id === "string" ? parseInt(user.id) : user.id;
+      const orgId =
+        typeof data.orgId === "string" ? parseInt(data.orgId) : data.orgId;
+
+      const { hasAccess } = await requireOrganizationOwner(userId, orgId);
+
+      if (!hasAccess) {
+        throw new Error("Forbidden: OWNER role required");
+      }
+
+      const findOrganization = await prismaClient.organization.findUnique({
+        where: { id: orgId },
+      });
+
+      if (!findOrganization) {
+        throw new Error("Organization not found");
+      }
+
+      const { data: emailData, error } = await resend.emails.send({
+        from: user.email || "",
+        to: data.to,
+        subject: `Invitation to join ${findOrganization.name} on .envShare`,
+        html: `<p>You have been invited to join the organization. Click <a href="#">here</a> to accept the invitation.</p>`,
+      });
+
+      if (error) {
+        console.error("Resend email error:", error);
+        throw new Error("Failed to send email");
+      }
+
+      return {
+        success: true,
+        message: "Email sent successfully",
+        data: emailData,
+      };
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw new Error("Failed to send email");
     }
   });

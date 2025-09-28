@@ -2,6 +2,7 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getCookie, setCookie } from "@tanstack/react-start/server";
 import { SESSION_COOKIE_NAME, validateSessionToken } from "@/lib/auth-utils";
 import type { User } from "@/interfaces";
+import { redirect } from "@tanstack/react-router";
 
 export interface AuthContext {
   user: User;
@@ -14,7 +15,9 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
       const sessionToken = getCookie(SESSION_COOKIE_NAME) ?? "";
 
       if (!sessionToken) {
-        throw new Error("No session token found");
+        throw redirect({
+          to: "/",
+        });
       }
 
       const result = await validateSessionToken(sessionToken);
@@ -24,7 +27,9 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
           expires: new Date(0),
           path: "/",
         });
-        throw new Error("Invalid or expired session token");
+        throw redirect({
+          to: "/",
+        });
       }
 
       return next({
@@ -39,4 +44,3 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
     }
   },
 );
-

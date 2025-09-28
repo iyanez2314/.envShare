@@ -17,6 +17,7 @@ import {
   getOrganizationInvitationsFn,
   updateInvitedUserRoleChangeFn,
   cancelOrganizationInvitationFn,
+  sendEmailFn,
 } from "@/server-functions/invitation-functions";
 import {
   updateOrganizationMemberRoleFn,
@@ -50,6 +51,10 @@ export function OrganizationMembersTable({
 
   const transferOwnershipMutation = useMutation({
     mutationFn: transferSuperOwnershipFn,
+  });
+
+  const sendInvitationEmailMutation = useMutation({
+    mutationFn: sendEmailFn,
   });
 
   const updateInvitationRoleMutation = useMutation({
@@ -96,8 +101,25 @@ export function OrganizationMembersTable({
     email: string;
     role: OrganizationRole;
   }) => {
-    // TODO: Implement invite logic
-    console.log("Inviting user:", data);
+    toast.promise(
+      sendInvitationEmailMutation.mutateAsync({
+        data: {
+          to: data.email,
+          orgId: organization.id,
+        },
+      }),
+      {
+        loading: "Sending invitation...",
+        success: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["organization-invitations", organization.id],
+          });
+          setMemberToRemove(null);
+          return "Invitation sent successfully!";
+        },
+        error: "Failed to send invitation",
+      },
+    );
 
     // Close modal
     setShowInviteModal(false);
